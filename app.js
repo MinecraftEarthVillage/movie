@@ -157,9 +157,6 @@ createApp({
 
 
 
-        const handleUpload = () => {
-            window.open('https://github.com/your-username/your-repo/issues', '_blank');
-        };
 
         const scrollToTop = () => {
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -221,7 +218,6 @@ createApp({
             closeVideoModal,
             handleVideoPlay,
             handleVideoShare,
-            handleUpload,
             searchByTag,
             scrollToTop,
             nextPage,
