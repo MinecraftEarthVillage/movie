@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>哔哩哔哩 (゜-゜)つロ 干杯~-这是个假的bilibili</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="app">
+        <!-- 顶部导航栏 -->
+        <header class="header">
+            <div class="header-container">
+                <div class="logo" @click="scrollToTop">
+                    <i class="fas fa-video"></i>
+                    <span>地球村的视频床</span>
+                </div>
+                
+                <!-- 搜索栏组件 -->
+                <search-bar 
+                    v-model="searchQuery"
+                    @search="performSearch"
+                    @clear="clearSearch"
+                ></search-bar>
+                
+                <!-- 投稿按钮 -->
+                <upload-button @upload-click="handleUpload"></upload-button>
+            </div>
+        </header>
+        
+        <!-- 分区导航 -->
+        <category-nav 
+            :categories="categories"
+            :current-category="currentCategory"
+            @category-change="changeCategory"
+        ></category-nav>
+        
+        <!-- 主内容区 -->
+        <main class="main-content">
+            <!-- 加载状态 -->
+            <div v-if="isLoading" class="loading-container">
+                <div class="loading-spinner">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>正在加载视频...</p>
+                </div>
+            </div>
+            
+            <!-- 搜索提示 -->
+            <div v-else-if="searchQuery" class="search-info">
+                <h3>搜索结果: "{{ searchQuery }}"</h3>
+                <p>找到 {{ filteredVideos.length }} 个视频</p>
+                <button class="clear-search-btn" @click="clearSearch">
+                    <i class="fas fa-times"></i> 清除搜索
+                </button>
+            </div>
+            
+            <!-- 分区标题 -->
+            <div v-else class="category-info">
+                <h2>{{ currentCategory.name }}</h2>
+                <p>{{ currentCategory.description }}</p>
+            </div>
+            
+            <!-- 视频网格 -->
+            <div v-if="!isLoading" class="video-grid">
+                <!-- 视频卡片组件 -->
+                <video-card
+                    v-for="video in paginatedVideos"
+                    :key="video.id"
+                    :video="video"
+                    @video-click="handleVideoClick"
+                ></video-card>
+            </div>
+            
+            <!-- 加载更多/分页 -->
+            <div v-if="!isLoading && filteredVideos.length > videosPerPage" class="pagination">
+                <button 
+                    v-if="currentPage > 1" 
+                    @click="prevPage"
+                    class="page-btn"
+                >
+                    <i class="fas fa-chevron-left"></i> 上一页
+                </button>
+                
+                <span class="page-info">第 {{ currentPage }} 页 / 共 {{ totalPages }} 页</span>
+                
+                <button 
+                    v-if="currentPage < totalPages" 
+                    @click="nextPage"
+                    class="page-btn"
+                >
+                    下一页 <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+            
+            <!-- 无结果提示 -->
+            <div v-if="!isLoading && filteredVideos.length === 0" class="no-results">
+                <i class="fas fa-video-slash"></i>
+                <h3>啥也木有</h3>
+                <p>尝试使用不同的关键词或选择其他分区</p>
+            </div>
+        </main>
+        
+        <!-- 视频详情模态框组件 -->
+        <video-modal
+            v-if="selectedVideo"
+            :show="showVideoModal"
+            :video="selectedVideo"
+            @close="closeVideoModal"
+            @play="handleVideoPlay"
+            @share="handleVideoShare"
+            @search-tag="searchByTag"
+        ></video-modal>
+        
+        <!-- 底部信息 -->
+        <footer class="footer">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4><i class="fas fa-sitemap"></i> 分区</h4>
+                    <ul>
+                        <li v-for="category in categories" :key="category.id">
+                            <a href="#" @click.prevent="changeCategory(category)">
+                                <i v-if="category.icon" :class="['fas', category.icon]"></i>
+                                {{ category.name }}
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="footer-section">
+                    <h4><i class="fas fa-link"></i> 链接</h4>
+                    <ul>
+                        <li><a href="#" target="_blank">地球村网页地图</a></li>
+                        <li><a href="https://github.com" target="_blank">地球村文档</a></li>
+                        <li><a href="#" @click.prevent="handleUpload">问题反馈/投稿</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-section">
+                    <h4><i class="fas fa-info-circle"></i> 关于</h4>
+                    <p>这是一个仿B站风格的纯前端视频床，无后端支持，视频指标数据存储在JSON文件中。</p>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p>&copy; 2025 仿B站视频床 | 使用 Vue.js 构建 | 共 {{ videos.length }} 个视频</p>
+            </div>
+        </footer>
+        
+        <!-- 回到顶部按钮 -->
+        <button 
+            v-if="showScrollTop" 
+            @click="scrollToTop"
+            class="scroll-top-btn"
+            aria-label="回到顶部"
+        >
+            <i class="fas fa-arrow-up"></i>
+        </button>
+    </div>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>
