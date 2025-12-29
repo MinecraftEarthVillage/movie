@@ -9,7 +9,7 @@ export default {
                     @error="handleImageError"
                     ref="thumbnailImg"
                 />
-                <div v-if="loading" class="loading-overlay">
+                <div v-if="thumbnailLoading" class="loading-overlay">
                     <i class="fas fa-spinner fa-spin"></i>
                 </div>
                 <div v-if="duration" class="video-duration">{{ formatDuration(duration) }}</div>
@@ -25,18 +25,6 @@ export default {
                     </span>
                 </div>
             </div>
-            
-            <!-- 隐藏的 video 元素用于获取视频时长 -->
-            <video 
-                v-if="!durationLoaded && video.path"
-                :src="video.path"
-                preload="metadata"
-                @loadedmetadata="onVideoMetadataLoaded"
-                @error="onVideoLoadError"
-                ref="videoElement"
-                crossorigin="anonymous"
-                style="display: none;"
-            ></video>
         </div>
     `,
     props: {
@@ -49,195 +37,201 @@ export default {
     data() {
         return {
             duration: null,
-            thumbnail: this.getThumbnail(),
-            loading: false,
+            thumbnail: null,
+            thumbnailLoading: false,
             durationLoaded: false,
-            attempts: 0
+            captureAttempts: 0,
+            maxCaptureAttempts: 3
         };
     },
     mounted() {
-        // 尝试从缓存加载视频信息
         this.loadCachedVideoInfo();
-        
-        // 如果没有缩略图，尝试生成
-        if (!this.thumbnail) {
-            this.loading = true;
-        }
+        this.initializeThumbnail();
     },
     methods: {
-        getThumbnail() {
-            // 如果有现成的缩略图，直接使用
+        initializeThumbnail() {
+            // 1. 优先使用现有的缩略图
             if (this.video.thumbnail) {
-                return this.video.thumbnail;
+                this.thumbnail = this.video.thumbnail;
+                return;
             }
-            
-            // 尝试从缓存获取
-            const videoKey = `video_${this.video.id || this.video.path}`;
-            const cachedInfo = localStorage.getItem(videoKey);
-            
-            if (cachedInfo) {
-                try {
+
+            // 2. 检查缓存中的缩略图
+            const cachedThumbnail = this.getCachedThumbnail();
+            if (cachedThumbnail) {
+                this.thumbnail = cachedThumbnail;
+                return;
+            }
+
+            // 3. 如果视频路径可用，开始生成缩略图
+            if (this.video.path) {
+                this.generateThumbnailFromVideo();
+            } else {
+                // 4. 最后使用默认缩略图
+                this.useDefaultThumbnail();
+            }
+        },
+
+        getCachedThumbnail() {
+            try {
+                const videoKey = `video_${this.video.id || this.video.path}`;
+                const cachedInfo = localStorage.getItem(videoKey);
+                
+                if (cachedInfo) {
                     const { thumbnail, lastUpdated } = JSON.parse(cachedInfo);
-                    const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+                    const cacheValidDuration = 7 * 24 * 60 * 60 * 1000; // 7天
+                    const now = Date.now();
                     
-                    if (thumbnail && lastUpdated > oneWeekAgo) {
+                    if (thumbnail && lastUpdated && (now - lastUpdated) < cacheValidDuration) {
                         return thumbnail;
                     }
-                } catch (error) {
-                    console.warn('读取缩略图缓存失败:', error);
                 }
+            } catch (error) {
+                console.warn('读取缩略图缓存失败:', error);
             }
-            
-            // 使用默认的SVG占位符
-            return this.generateDefaultThumbnail();
+            return null;
         },
-        
-        async loadCachedVideoInfo() {
+
+        async generateThumbnailFromVideo() {
+            if (this.captureAttempts >= this.maxCaptureAttempts) {
+                this.useDefaultThumbnail();
+                return;
+            }
+
+            this.thumbnailLoading = true;
+            this.captureAttempts++;
+
+            try {
+                const thumbnail = await this.captureVideoFrame();
+                if (thumbnail) {
+                    this.thumbnail = thumbnail;
+                    this.cacheVideoInfo({ thumbnail });
+                } else {
+                    this.useDefaultThumbnail();
+                }
+            } catch (error) {
+                console.warn('生成视频缩略图失败:', error.message);
+                this.useDefaultThumbnail();
+            } finally {
+                this.thumbnailLoading = false;
+            }
+        },
+
+        captureVideoFrame() {
+            return new Promise((resolve, reject) => {
+                // 创建video元素
+                const video = document.createElement('video');
+                video.crossOrigin = 'anonymous';
+                video.preload = 'metadata';
+                video.muted = true;
+                video.playsInline = true;
+
+                // 设置超时
+                const timeoutId = setTimeout(() => {
+                    cleanup();
+                    reject(new Error('视频加载超时'));
+                }, 10000);
+
+                const cleanup = () => {
+                    clearTimeout(timeoutId);
+                    video.removeEventListener('loadedmetadata', onLoadedMetadata);
+                    video.removeEventListener('seeked', onSeeked);
+                    video.removeEventListener('error', onError);
+                    video.pause();
+                    video.src = '';
+                    video.load();
+                };
+
+                const onLoadedMetadata = () => {
+                    // 设置视频时长（如果尚未设置）
+                    if (!this.duration && video.duration) {
+                        this.duration = video.duration;
+                        this.durationLoaded = true;
+                        this.cacheVideoInfo({ duration: video.duration });
+                    }
+
+                    // 尝试跳转到10%的位置，但不超过1秒
+                    const targetTime = Math.min(video.duration * 0.1, 1);
+                    video.currentTime = targetTime;
+                };
+
+                const onSeeked = () => {
+                    // 创建canvas并绘制视频帧
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    
+                    // 设置canvas尺寸（缩略图尺寸）
+                    canvas.width = 320;
+                    canvas.height = 180;
+                    
+                    try {
+                        // 绘制视频帧
+                        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                        
+                        // 检查canvas是否被污染（跨域问题）
+                        ctx.getImageData(0, 0, 1, 1);
+                        
+                        // 生成Base64缩略图
+                        const thumbnail = canvas.toDataURL('image/jpeg', 0.7);
+                        cleanup();
+                        resolve(thumbnail);
+                    } catch (error) {
+                        cleanup();
+                        reject(new Error('无法访问视频帧（跨域限制）'));
+                    }
+                };
+
+                const onError = (error) => {
+                    cleanup();
+                    reject(error);
+                };
+
+                // 绑定事件
+                video.addEventListener('loadedmetadata', onLoadedMetadata);
+                video.addEventListener('seeked', onSeeked);
+                video.addEventListener('error', onError);
+
+                // 开始加载视频
+                video.src = this.video.path;
+            });
+        },
+
+        loadCachedVideoInfo() {
             try {
                 const videoKey = `video_${this.video.id || this.video.path}`;
                 const cachedInfo = localStorage.getItem(videoKey);
                 
                 if (cachedInfo) {
                     const { duration, lastUpdated } = JSON.parse(cachedInfo);
-                    const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+                    const cacheValidDuration = 7 * 24 * 60 * 60 * 1000;
+                    const now = Date.now();
                     
-                    if (duration && lastUpdated > oneWeekAgo) {
+                    if (duration && lastUpdated && (now - lastUpdated) < cacheValidDuration) {
                         this.duration = duration;
                         this.durationLoaded = true;
-                        return;
                     }
                 }
             } catch (error) {
                 console.warn('读取视频缓存失败:', error);
             }
-            
-            // 如果没有缓存，将等待视频元素加载
         },
-        
-        onVideoMetadataLoaded(event) {
-            const video = event.target;
-            
-            if (video.duration && video.duration > 0) {
-                this.duration = video.duration;
-                this.durationLoaded = true;
-                
-                // 缓存视频时长
-                this.cacheVideoInfo();
-                
-                // 尝试生成缩略图（如果还没有）
-                if (!this.video.thumbnail && this.attempts < 3) {
-                    this.generateThumbnail();
-                }
-            }
-            
-            // 清理视频元素
-            this.cleanupVideoElement();
-        },
-        
-        async generateThumbnail() {
-            this.attempts++;
-            
-            // 如果视频是跨域的，我们不能使用Canvas生成缩略图
-            // 尝试使用更简单的方法：创建一个临时的video元素
-            try {
-                const video = document.createElement('video');
-                video.crossOrigin = 'anonymous';
-                video.preload = 'metadata';
-                
-                // 设置超时
-                const timeoutPromise = new Promise((_, reject) => {
-                    setTimeout(() => reject(new Error('超时')), 5000);
-                });
-                
-                const loadPromise = new Promise((resolve, reject) => {
-                    video.onloadeddata = () => {
-                        video.currentTime = Math.min(video.duration * 0.1, 1);
-                        resolve();
-                    };
-                    video.onerror = reject;
-                });
-                
-                video.src = this.video.path;
-                
-                // 等待视频加载
-                await Promise.race([loadPromise, timeoutPromise]);
-                
-                // 等待视频跳转到指定位置
-                await new Promise(resolve => {
-                    video.onseeked = resolve;
-                    setTimeout(resolve, 1000);
-                });
-                
-                // 尝试通过Canvas生成缩略图
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-                canvas.width = 320;
-                canvas.height = 180;
-                
-                // 注意：跨域视频可能会抛出安全错误
-                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                
-                // 检查Canvas是否被污染
-                try {
-                    const imageData = ctx.getImageData(0, 0, 1, 1);
-                    if (imageData) {
-                        const thumbnail = canvas.toDataURL('image/jpeg', 0.7);
-                        this.thumbnail = thumbnail;
-                        this.cacheThumbnail(thumbnail);
-                    }
-                } catch (error) {
-                    // Canvas被污染，不能使用
-                    console.log('Canvas被污染，无法生成缩略图');
-                    this.useDefaultThumbnail();
-                }
-                
-            } catch (error) {
-                console.warn('生成缩略图失败:', error.message);
-                this.useDefaultThumbnail();
-            } finally {
-                this.loading = false;
-            }
-        },
-        
-        cacheVideoInfo() {
+
+        cacheVideoInfo(info) {
             try {
                 const videoKey = `video_${this.video.id || this.video.path}`;
                 const cachedInfoStr = localStorage.getItem(videoKey);
-                let cachedInfo = {};
+                let cachedInfo = cachedInfoStr ? JSON.parse(cachedInfoStr) : {};
                 
-                if (cachedInfoStr) {
-                    cachedInfo = JSON.parse(cachedInfoStr);
-                }
-                
-                cachedInfo.duration = this.duration;
-                cachedInfo.lastUpdated = Date.now();
+                // 更新缓存信息
+                Object.assign(cachedInfo, info, { lastUpdated: Date.now() });
                 
                 localStorage.setItem(videoKey, JSON.stringify(cachedInfo));
             } catch (error) {
                 console.warn('缓存视频信息失败:', error);
             }
         },
-        
-        cacheThumbnail(thumbnail) {
-            try {
-                const videoKey = `video_${this.video.id || this.video.path}`;
-                const cachedInfoStr = localStorage.getItem(videoKey);
-                let cachedInfo = {};
-                
-                if (cachedInfoStr) {
-                    cachedInfo = JSON.parse(cachedInfoStr);
-                }
-                
-                cachedInfo.thumbnail = thumbnail;
-                cachedInfo.lastUpdated = Date.now();
-                
-                localStorage.setItem(videoKey, JSON.stringify(cachedInfo));
-            } catch (error) {
-                console.warn('缓存缩略图失败:', error);
-            }
-        },
-        
-        generateDefaultThumbnail() {
+
+        useDefaultThumbnail() {
             const colors = ['#00a1d6', '#f25d8e', '#fb7299', '#ff9800', '#4caf50', '#2196f3', '#9c27b0'];
             const color = colors[Math.floor(Math.random() * colors.length)];
             const title = this.video.title || '视频标题';
@@ -249,41 +243,34 @@ export default {
                     <rect width="100%" height="100%" fill="${color}"/>
                     <text x="50%" y="50%" font-family="Arial, sans-serif" font-size="16" 
                           fill="white" text-anchor="middle" dy=".3em">${text}</text>
+                    <path d="M120 80 L200 120 L120 160 Z" fill="white" opacity="0.8" transform="translate(0, -10)"/>
                 </svg>`;
             
-            return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
-        },
-        
-        useDefaultThumbnail() {
-            this.thumbnail = this.generateDefaultThumbnail();
-            this.cacheThumbnail(this.thumbnail);
-        },
-        
-        cleanupVideoElement() {
-            if (this.$refs.videoElement) {
-                const video = this.$refs.videoElement;
-                video.pause();
-                video.src = '';
-                video.load();
+            const defaultThumbnail = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+            
+            // 如果当前没有缩略图，才设置默认缩略图
+            if (!this.thumbnail) {
+                this.thumbnail = defaultThumbnail;
+                this.cacheVideoInfo({ thumbnail: defaultThumbnail });
             }
         },
-        
+
         onThumbnailLoad() {
-            this.loading = false;
+            this.thumbnailLoading = false;
         },
-        
+
         handleImageError() {
-            console.log('缩略图加载失败，使用默认缩略图');
-            this.useDefaultThumbnail();
-            this.loading = false;
+            console.log('缩略图加载失败，尝试重新生成或使用默认缩略图');
+            
+            // 如果还有尝试次数，重新生成缩略图
+            if (this.captureAttempts < this.maxCaptureAttempts) {
+                this.generateThumbnailFromVideo();
+            } else {
+                this.useDefaultThumbnail();
+                this.thumbnailLoading = false;
+            }
         },
-        
-        onVideoLoadError(error) {
-            console.warn('加载视频元数据失败:', error);
-            this.loading = false;
-            this.durationLoaded = true;
-        },
-        
+
         formatDuration(seconds) {
             if (!seconds) return '00:00';
             
@@ -294,10 +281,10 @@ export default {
             if (hours > 0) {
                 return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
             } else {
-                return `${minutes}:${secs.toString().padStart(2, '0')}`;
+                return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
             }
         },
-        
+
         formatViews(views) {
             if (!views) return 0;
             
@@ -308,7 +295,7 @@ export default {
             }
             return views;
         },
-        
+
         formatDate(dateString) {
             if (!dateString) return '';
             
@@ -329,9 +316,5 @@ export default {
                 return dateString;
             }
         }
-    },
-    
-    beforeUnmount() {
-        this.cleanupVideoElement();
     }
 };

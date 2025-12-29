@@ -4,9 +4,9 @@
     { "id": "entertainment", "name": "娱乐", "description": "搞笑、综艺、明星相关内容", "icon": "fa-film" },
     { "id": "game", "name": "游戏", "description": "游戏实况、攻略、解说", "icon": "fa-gamepad" },
     { "id": "technology", "name": "科技", "description": "科技资讯、数码评测、编程教程", "icon": "fa-laptop-code" },
-    { "id": "life", "name": "生活", "description": "日常记录、美食、旅行、手工", "icon": "fa-home" },
+    { "id": "生活", "name": "生活", "description": "日常记录、美食、旅行、手工", "icon": "fa-home" },
     { "id": "music", "name": "音乐", "description": "音乐现场、翻唱、原创歌曲", "icon": "fa-music" },
-    { "id": "animation", "name": "动画", "description": "动漫、二次元相关内容", "icon": "fa-tv" }
+    { "id": "动画", "name": "动画", "description": "动漫、二次元相关内容", "icon": "fa-tv" }
   ],
   "footerLinks": [
     { "name": "关于我们", "url": "#about" },

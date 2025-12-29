@@ -1,14 +1,14 @@
 export default {
     template: `
-        <div v-if="show" class="modal-overlay" @click.self="close">
+        <div v-if="show" class="modal-overlay" >
             <div class="video-modal">
                 <button class="close-modal" @click="close" aria-label="关闭">
                     <i class="fas fa-times"></i>
                 </button>
                 
                 <div class="modal-content">
-                    <div class="video-player">
-                        <video 
+                    <div class="video-player" style="align-items:center">
+                        <video style="max-height: 80vh; width: auto;margin: 0 auto;display: block;"
                             :src="video.path" 
                             controls
                             :poster="thumbnail"
@@ -52,11 +52,6 @@ export default {
                         </div>
                         
                         <div class="video-actions" v-if="showActions">
-                            <button class="action-btn" @click="handleLike">
-                                <i :class="['fas', isLiked ? 'fa-heart' : 'fa-heart']" 
-                                   :style="{ color: isLiked ? '#fb7299' : '#61666d' }"></i>
-                                {{ isLiked ? '已点赞' : '点赞' }}
-                            </button>
                             <button class="action-btn" @click="handleShare">
                                 <i class="fas fa-share"></i> 分享
                             </button>
