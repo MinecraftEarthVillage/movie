@@ -1,6 +1,6 @@
 export default {
     template: `
-        <div v-if="show" class="modal-overlay" >
+        <div v-if="show" class="modal-overlay" @click.self="close">
             <div class="video-modal">
                 <button class="close-modal" @click="close" aria-label="关闭">
                     <i class="fas fa-times"></i>
@@ -11,8 +11,9 @@ export default {
                         <video 
                             :src="video.path" 
                             controls
-                            :poster="video.thumbnail"
+                            :poster="thumbnail"
                             ref="videoPlayer"
+                            @loadedmetadata="onVideoLoaded"
                             @play="handlePlay"
                             @pause="handlePause"
                             @ended="handleEnded"
@@ -26,11 +27,11 @@ export default {
                             <span class="views">
                                 <i class="fas fa-eye"></i> {{ formatViews(video.views) }} 次播放
                             </span>
-                            <span class="date">
+                            <span class="date" v-if="video.date">
                                 <i class="far fa-calendar"></i> {{ formatDate(video.date) }}
                             </span>
-                            <span class="duration">
-                                <i class="far fa-clock"></i> {{ video.duration }}
+                            <span class="duration" v-if="videoDuration">
+                                <i class="far fa-clock"></i> {{ formatDuration(videoDuration) }}
                             </span>
                         </div>
                         
@@ -51,6 +52,11 @@ export default {
                         </div>
                         
                         <div class="video-actions" v-if="showActions">
+                            <button class="action-btn" @click="handleLike">
+                                <i :class="['fas', isLiked ? 'fa-heart' : 'fa-heart']" 
+                                   :style="{ color: isLiked ? '#fb7299' : '#61666d' }"></i>
+                                {{ isLiked ? '已点赞' : '点赞' }}
+                            </button>
                             <button class="action-btn" @click="handleShare">
                                 <i class="fas fa-share"></i> 分享
                             </button>
@@ -70,13 +76,91 @@ export default {
             default: () => ({})
         }
     },
-    emits: ['close', 'play', 'pause', 'ended', 'share', 'search-tag'],
+    emits: ['close', 'play', 'pause', 'ended', 'like', 'share', 'search-tag'],
     data() {
         return {
-            showActions: true
+            isLiked: false,
+            showActions: true,
+            videoDuration: null,
+            thumbnail: this.video.thumbnail || ''
         };
     },
+    watch: {
+        show(newVal) {
+            if (newVal) {
+                document.body.style.overflow = 'hidden';
+                this.checkIfLiked();
+                
+                // 从缓存获取时长
+                this.loadCachedDuration();
+            } else {
+                document.body.style.overflow = 'auto';
+                this.stopVideo();
+            }
+        },
+        
+        video(newVideo) {
+            this.thumbnail = newVideo.thumbnail || '';
+            this.loadCachedDuration();
+        }
+    },
     methods: {
+        onVideoLoaded(event) {
+            const video = event.target;
+            this.videoDuration = video.duration;
+            
+            // 缓存视频时长
+            this.cacheVideoDuration();
+        },
+        
+        loadCachedDuration() {
+            try {
+                const videoKey = `video_${this.video.id || this.video.path}`;
+                const cachedInfo = localStorage.getItem(videoKey);
+                
+                if (cachedInfo) {
+                    const { duration } = JSON.parse(cachedInfo);
+                    this.videoDuration = duration;
+                }
+            } catch (error) {
+                console.warn('读取视频时长缓存失败:', error);
+            }
+        },
+        
+        cacheVideoDuration() {
+            if (!this.videoDuration) return;
+            
+            try {
+                const videoKey = `video_${this.video.id || this.video.path}`;
+                const cachedInfoStr = localStorage.getItem(videoKey);
+                let cachedInfo = {};
+                
+                if (cachedInfoStr) {
+                    cachedInfo = JSON.parse(cachedInfoStr);
+                }
+                
+                cachedInfo.duration = this.videoDuration;
+                cachedInfo.lastUpdated = Date.now();
+                
+                localStorage.setItem(videoKey, JSON.stringify(cachedInfo));
+            } catch (error) {
+                console.warn('缓存视频时长失败:', error);
+            }
+        },
+        
+        formatDuration(seconds) {
+            if (!seconds) return '00:00';
+            
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = Math.floor(seconds % 60);
+            
+            if (hours > 0) {
+                return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            } else {
+                return `${minutes}:${secs.toString().padStart(2, '0')}`;
+            }
+        },
         close() {
             this.$emit('close');
         },
