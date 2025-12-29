@@ -71,20 +71,6 @@ createApp({
                 if (!response.ok) throw new Error('Failed to load videos');
                 videos.value = await response.json();
 
-                // 从localStorage恢复点击量
-                const videoStats = JSON.parse(localStorage.getItem('videoStats') || '{}');
-                videos.value.forEach(video => {
-                    if (videoStats[video.id]) {
-                        video.views = videoStats[video.id].views;
-                    }
-
-                    // 生成缩略图
-                    if (!video.thumbnail) {
-                        const colors = ['#00a1d6', '#f25d8e', '#fb7299', '#ff9800', '#4caf50'];
-                        const color = colors[Math.floor(Math.random() * colors.length)];
-                        video.thumbnail = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="320" height="180" viewBox="0 0 320 180"><rect width="100%" height="100%" fill="${color}"/><text x="50%" y="50%" font-family="Arial" font-size="16" fill="white" text-anchor="middle" dy=".3em">${video.title.substring(0, 20)}</text></svg>`;
-                    }
-                });
             } catch (error) {
                 console.error('加载视频数据失败:', error);
                 videos.value = getMockVideos();
@@ -122,8 +108,6 @@ createApp({
                     title: '啥也木有',
                     description: '我就是来占位的',
                     path: '',
-                    thumbnail: '',  // 将动态生成
-                    views: 0,
                     date: '',
                     tags: [],
                     category: ''
@@ -149,10 +133,6 @@ createApp({
         const handleVideoClick = (video) => {
             selectedVideo.value = video;
             showVideoModal.value = true;
-
-            // 增加点击量
-            video.views = (parseInt(video.views) || 0) + 1;
-            updateVideoViews(video.id, video.views);
         };
 
         const closeVideoModal = () => {
@@ -175,18 +155,7 @@ createApp({
             closeVideoModal();
         };
 
-        const updateVideoViews = (videoId, views) => {
-            try {
-                const videoStats = JSON.parse(localStorage.getItem('videoStats') || '{}');
-                videoStats[videoId] = {
-                    views,
-                    lastUpdated: new Date().toISOString()
-                };
-                localStorage.setItem('videoStats', JSON.stringify(videoStats));
-            } catch (error) {
-                console.error('更新视频点击量失败:', error);
-            }
-        };
+
 
         const handleUpload = () => {
             window.open('https://github.com/your-username/your-repo/issues', '_blank');

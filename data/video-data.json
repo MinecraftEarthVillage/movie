@@ -10,7 +10,7 @@
     "category": "动画"
   },
   {
-    "id": 1,
+    "id": 2,
     "title": "列车实拍",
     "description": "只是个列车而已",
     "path": "./0AB97086DB3DAED7890DC97AA92B0A36.mp4",
@@ -18,5 +18,51 @@
     "date": "2023-10-20",
     "tags": ["火车", "列车", "GK1C", "柴油机车","矿车","工业"],
     "category": "生活"
+  },
+  {
+    "id": "傻逼",
+    "title": "撕试卷",
+    "description": "一个傻逼在考试时突然撕碎别人试卷",
+    "path": "./撕试卷.mp4",
+    "views": 1,
+    "date": "2023-10-20",
+    "tags": ["傻逼", "乐子", "支那猪", "中国","考试","学生"],
+    "category": "生活"
+  },
+  {
+    "id": "S2E1",
+    "title": "迪比狗第二季测试版",
+    "description": "废案",
+    "path": "./S2E1.mp4",
+    "date": "2023-10-20",
+    "tags": ["狗"],
+    "category": "动画"
+  },
+  {
+    "id": "mcxiaolulu传",
+    "title": "mcxiaolulu传",
+    "description": "互联网神人",
+    "path": "./lezi/mcxiaolulu/压迫群成员/12.mp4",
+    "date": "2025-08-14",
+    "tags": ["傻逼"],
+    "category": "乐子"
+  },
+  {
+    "id": "pankuler1",
+    "title": "pankuler录屏1",
+    "description": "",
+    "path": "./lezi/pankuler传/Screenrecorder-2024-04-16-19-59-50-487.mp4",
+    "date": "2024-04-16",
+    "tags": ["傻逼"],
+    "category": "乐子"
+  },
+  {
+    "id": "pankuler2",
+    "title": "pankuler录屏2",
+    "description": "",
+    "path": "./lezi/pankuler传/Video_21868113859052.mp4",
+    "date": "2025-7-29",
+    "tags": ["傻逼"],
+    "category": "乐子"
   }
 ]

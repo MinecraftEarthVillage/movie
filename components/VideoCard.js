@@ -17,9 +17,6 @@ export default {
             <div class="video-info">
                 <h3 class="video-title">{{ video.title }}</h3>
                 <div class="video-meta">
-                    <span class="views">
-                        <i class="fas fa-eye"></i> {{ formatViews(video.views) }} 播放
-                    </span>
                     <span class="date" v-if="video.date">
                         <i class="far fa-calendar"></i> {{ formatDate(video.date) }}
                     </span>
@@ -150,8 +147,8 @@ export default {
                         this.cacheVideoInfo({ duration: video.duration });
                     }
 
-                    // 尝试跳转到10%的位置，但不超过1秒
-                    const targetTime = Math.min(video.duration * 0.1, 1);
+                    // 尝试跳转到10%的位置，但不超过10秒
+                    const targetTime = Math.min(video.duration * 0.1, 10);
                     video.currentTime = targetTime;
                 };
 
@@ -285,16 +282,7 @@ export default {
             }
         },
 
-        formatViews(views) {
-            if (!views) return 0;
-            
-            if (views >= 10000) {
-                return (views / 10000).toFixed(1) + '万';
-            } else if (views >= 1000) {
-                return (views / 1000).toFixed(1) + '千';
-            }
-            return views;
-        },
+
 
         formatDate(dateString) {
             if (!dateString) return '';
