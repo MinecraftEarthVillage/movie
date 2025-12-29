@@ -1,0 +1,105 @@
+name: 视频投稿
+description: 提交新视频到视频床
+title: "[视频投稿] 请填写视频标题"
+labels: ["视频投稿", "待处理"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        # 🎬 视频投稿说明
+        
+        感谢您为视频床投稿！请按照以下模板填写信息，以便我们快速处理您的投稿。
+        
+        **重要提示：**
+        1. 视频文件大小请控制在 **25MB** 以内
+        2. 请确保视频内容符合相关法律法规
+        3. 投稿后视频将公开可见
+        
+        ---
+        
+  - type: textarea
+    id: video-link
+    attributes:
+      label: "视频文件链接"
+      description: "请将视频文件上传到以下任一平台，然后粘贴公开访问链接："
+      placeholder: |
+        上传选项（选择其一）：
+        1. 通过GitHub附件上传（25MB以内）
+        2. 通过 https://tmpfiles.org/ 上传
+        3. 通过 https://file.io/ 上传
+        4. 通过网盘分享（需提供永久有效链接）
+        
+        链接示例：https://tmpfiles.org/dl/xxxxx/your-video.mp4
+    validations:
+      required: true
+      
+  - type: input
+    id: video-title
+    attributes:
+      label: "视频标题"
+      description: "请输入视频标题（2-50个字符）"
+      placeholder: "例如：Vue.js 入门教程"
+    validations:
+      required: true
+      max_length: 50
+      min_length: 2
+      
+  - type: textarea
+    id: video-tags
+    attributes:
+      label: "视频标签"
+      description: |
+        请使用英文引号包裹每个标签，用英文逗号隔开
+        格式示例：`"编程","Vue.js","教程"`
+      placeholder: '"标签1","标签2","标签3"'
+    validations:
+      required: true
+      
+  - type: textarea
+    id: video-description
+    attributes:
+      label: "视频简介"
+      description: "请简要描述视频内容（10-500个字符）"
+      placeholder: "例如：这是一个关于Vue.js框架的入门教程，适合初学者..."
+    validations:
+      required: true
+      max_length: 500
+      min_length: 10
+      
+  - type: dropdown
+    id: video-category
+    attributes:
+      label: "视频分区"
+      description: "请选择视频所属分区"
+      options:
+        - 娱乐
+        - 游戏
+        - 科技
+        - 生活
+        - 音乐
+        - 动画
+        - 知识
+        - 其他
+    validations:
+      required: true
+      
+  - type: textarea
+    id: additional-info
+    attributes:
+      label: "附加信息"
+      description: "如有其他需要说明的信息，请在此填写（可选）"
+      placeholder: "例如：视频时长、分辨率、是否需要特殊处理等"
+      
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: "投稿协议"
+      description: "请确认以下条款"
+      options:
+        - label: "我确认拥有此视频的合法版权或已获得授权"
+          required: true
+        - label: "我同意视频在视频床网站公开播放和展示"
+          required: true
+        - label: "我了解视频内容应符合社区准则和相关法律法规"
+          required: true

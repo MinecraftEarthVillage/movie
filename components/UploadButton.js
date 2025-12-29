@@ -7,7 +7,7 @@ export default {
     methods: {
         handleClick() {
             // 跳转到 GitHub Issues 页面
-            window.open('https://github.com/your-username/your-repo/issues/new', '_blank');
+            window.open('https://github.com/minecraftearthvillage/movie/issues/new?template=投稿.yml', '_blank');
             
             // 发送事件给父组件
             this.$emit('upload-click');
