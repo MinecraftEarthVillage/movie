@@ -1,0 +1,68 @@
+name: 一键部署
+
+on:
+  push:
+    branches: [ main ]
+    # 不需要 paths-ignore，因为工作流自身提交时会加 [skip ci]
+  workflow_dispatch:   # 手动触发
+
+permissions:
+  contents: write      # 用于提交更新后的 JSON
+  pages: write         # 用于部署 Pages
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  update-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      # 1. 检出完整历史（用于 git log）
+      - name: 检出完整历史（用于 git log）
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # 2. 设置 Node.js
+      - name: 设置 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # 3. 运行日期补全脚本（修改 video-data.json）
+      - name: 运行日期补全脚本（不全 video-data.json 里缺少的date字段）
+        run: node scripts/update-video-dates.js
+
+      # 4. 提交变更（带 [skip ci]）
+      - name: Commit changes
+        run: |
+          git config --global 么么哒机器人 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add data/video-data.json
+          if git diff --staged --quiet; then
+            echo "ℹ️ No changes to commit."
+          else
+            git commit -m "chore(data): auto-fill missing video dates [skip ci]"
+            git push
+          fi
+
+      # 5. 配置 GitHub Pages
+      - name: 配置 GitHub Pages
+        uses: actions/configure-pages@v4
+
+      # 6. 上传部署产物（这里上传整个仓库）
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+
+      # 7. 部署到 GitHub Pages
+      - name: 部署到 GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
