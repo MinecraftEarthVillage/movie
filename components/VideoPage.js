@@ -5,16 +5,43 @@ export default {
             <button class="back-home-btn" @click="goBack">
                 <i class="fas fa-arrow-left"></i> 返回首页
             </button>
+
             <div class="video-player-container">
+                <!-- 视频播放器 -->
                 <video 
-                    :src="video.path" 
+                    :src="currentSrc"
                     controls
                     :poster="thumbnail"
                     ref="videoPlayer"
                     @loadedmetadata="onVideoLoaded"
+                    @error="handleVideoError"
+                    crossorigin="anonymous"
                     autoplay
                 ></video>
+
+                <!-- CORS 代理提示 -->
+                <div v-if="corsError && !usingProxy" class="cors-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <p>无法直接播放该视频（跨域限制）</p>
+                    <button class="proxy-btn" @click="useProxy">
+                        <i class="fas fa-shield-alt"></i> 使用代理播放
+                    </button>
+                    <p class="proxy-note">
+                        代理服务由第三方提供，仅用于临时播放。<br>
+                        您也可以 <a :href="video.path" target="_blank">下载视频</a> 后本地观看。
+                    </p>
+                </div>
+
+                <!-- 代理切换失败提示（可选） -->
+                <div v-if="proxyFailed" class="cors-warning error">
+                    <i class="fas fa-times-circle"></i>
+                    <p>代理播放失败，请尝试其他代理或下载视频。</p>
+                    <button class="proxy-btn" @click="resetAndRetry">
+                        <i class="fas fa-redo"></i> 重试
+                    </button>
+                </div>
             </div>
+
             <div class="video-details">
                 <h2>{{ video.title }}</h2>
                 <div class="video-meta">
@@ -40,7 +67,18 @@ export default {
     data() {
         return {
             videoDuration: null,
-            thumbnail: this.video.thumbnail || ''
+            thumbnail: this.video.thumbnail || '',
+            currentSrc: this.video.path,        // 当前视频源
+            corsError: false,                   // 是否发生 CORS 错误
+            usingProxy: false,                 // 是否正在使用代理
+            proxyFailed: false,                // 代理播放失败
+            // 公共 CORS 代理列表（按优先顺序尝试）
+            proxyList: [
+                'https://cors-anywhere.herokuapp.com/',
+                'https://api.allorigins.win/raw?url=',
+                'https://proxy.cors.sh/'
+            ],
+            currentProxyIndex: 0
         };
     },
     mounted() {
@@ -51,6 +89,81 @@ export default {
         onVideoLoaded(e) {
             this.videoDuration = e.target.duration;
             this.cacheVideoDuration();
+            // 成功加载后重置错误状态
+            this.corsError = false;
+            this.proxyFailed = false;
+        },
+        handleVideoError(e) {
+            const error = e.target.error;
+            // 检查是否为 CORS 相关错误
+            if (error && (
+                error.message?.includes('CORS') ||
+                error.message?.includes('cross-origin') ||
+                error.code === 18  // MEDIA_ERR_SRC_NOT_SUPPORTED 有时因CORS引起
+            )) {
+                this.corsError = true;
+            } else {
+                // 其他错误（如404）可显示通用提示
+                console.warn('视频加载失败:', error);
+            }
+        },
+        // 使用 CORS 代理重新加载视频
+        useProxy() {
+            if (!this.video.path) return;
+            this.usingProxy = true;
+            this.corsError = false;
+            this.proxyFailed = false;
+
+            const proxyUrl = this.proxyList[this.currentProxyIndex];
+            if (!proxyUrl) {
+                // 所有代理均尝试完毕
+                this.proxyFailed = true;
+                this.usingProxy = false;
+                return;
+            }
+
+            // 构建代理 URL（不同代理格式略有差异）
+            let proxiedSrc;
+            if (proxyUrl.includes('allorigins') || proxyUrl.includes('raw?url=')) {
+                proxiedSrc = proxyUrl + encodeURIComponent(this.video.path);
+            } else {
+                proxiedSrc = proxyUrl + this.video.path;
+            }
+
+            this.currentSrc = proxiedSrc;
+
+            // 监听下一次错误，若仍失败则尝试下一个代理
+            const nextProxy = () => {
+                this.currentProxyIndex++;
+                if (this.currentProxyIndex < this.proxyList.length) {
+                    this.useProxy();
+                } else {
+                    this.proxyFailed = true;
+                    this.usingProxy = false;
+                }
+            };
+
+            // 等待视频加载，如果 5 秒内未触发 loadedmetadata 则视为失败
+            const timeout = setTimeout(() => {
+                if (!this.videoDuration) {
+                    nextProxy();
+                }
+            }, 5000);
+
+            // 单次监听 loadedmetadata，成功后清除超时
+            const onLoad = () => {
+                clearTimeout(timeout);
+                this.$refs.videoPlayer.removeEventListener('loadedmetadata', onLoad);
+            };
+            this.$refs.videoPlayer.addEventListener('loadedmetadata', onLoad);
+        },
+        // 重置为原始链接并重新尝试（清空代理状态）
+        resetAndRetry() {
+            this.currentSrc = this.video.path;
+            this.usingProxy = false;
+            this.corsError = true;      // 让代理提示再次显示
+            this.proxyFailed = false;
+            this.currentProxyIndex = 0;
         },
         loadCachedDuration() {
             try {
