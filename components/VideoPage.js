@@ -55,7 +55,9 @@ export default {
                 </div>
                 <div class="video-description" v-if="video.description">
                     <h4>简介</h4>
-                    <p>{{ video.description }}</p>
+                    <p v-if="video.description" class="video-description" style="white-space: pre-line;">
+                        {{ video.description }}
+                    </p>
                 </div>
             </div>
         </div>
@@ -173,7 +175,7 @@ export default {
                     const { duration } = JSON.parse(cached);
                     this.videoDuration = duration;
                 }
-            } catch (e) {}
+            } catch (e) { }
         },
         cacheVideoDuration() {
             if (!this.videoDuration) return;
@@ -183,26 +185,39 @@ export default {
                 cached.duration = this.videoDuration;
                 cached.lastUpdated = Date.now();
                 localStorage.setItem(key, JSON.stringify(cached));
-            } catch (e) {}
+            } catch (e) { }
         },
         formatDuration(seconds) {
             if (!seconds) return '00:00';
             const h = Math.floor(seconds / 3600);
             const m = Math.floor((seconds % 3600) / 60);
             const s = Math.floor(seconds % 60);
-            return h ? `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}` 
-                     : `${m}:${s.toString().padStart(2, '0')}`;
+            return h ? `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
+                : `${m}:${s.toString().padStart(2, '0')}`;
         },
         formatDate(dateString) {
             if (!dateString) return '';
             const date = new Date(dateString);
-            if (isNaN(date.getTime())) return dateString;
-            const diff = Math.ceil((Date.now() - date) / (1000 * 60 * 60 * 24));
-            if (diff === 1) return '昨天';
-            if (diff <= 7) return `${diff}天前`;
-            if (diff <= 30) return `${Math.floor(diff / 7)}周前`;
-            if (diff <= 365) return `${Math.floor(diff / 30)}个月前`;
-            return `${Math.floor(diff / 365)}年前`;
+            if (isNaN(date.getTime())) return dateString; // 非法格式，原样返回
+
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+
+            // 判断时间部分是否全为零（纯日期字符串解析后为 00:00:00）
+            const hours = date.getHours();
+            const minutes = date.getMinutes();
+            const seconds = date.getSeconds();
+            const milliseconds = date.getMilliseconds();
+
+            if (hours === 0 && minutes === 0 && seconds === 0 && milliseconds === 0) {
+                // 纯日期，不显示时间
+                return `${year}年${month}月${day}日`;
+            } else {
+                // 包含时间，精确到秒
+                const time = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                return `${year}年${month}月${day}日 ${time}`;
+            }
         },
         goBack() {
             this.$emit('back');

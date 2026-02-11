@@ -41,7 +41,26 @@ export default {
         goToVideoPage() {
             window.open(`?video=${this.video.id}`, '_blank');
         },
-        // ---------- 缩略图生成逻辑（与之前完全相同）----------
+
+        // ========== 多行文本安全格式化（供详情组件使用） ==========
+        // 将换行符转为 <br>，并转义 HTML 特殊字符，防止 XSS
+        formatMultilineText(text) {
+            if (!text) return '';
+            // 转义 HTML 字符用于防止XSS 但目前是纯前端网站，并非任何人可以直接上传，一切都在我的掌控之中，暂时不使用
+            // const escapeHtml = (unsafe) => {
+            //     return unsafe
+            //         .replace(/&/g, '&amp;')
+            //         .replace(/</g, '&lt;')
+            //         .replace(/>/g, '&gt;')
+            //         .replace(/"/g, '&quot;')
+            //         .replace(/'/g, '&#039;');
+            // };
+            const escaped = escapeHtml(text);
+            // 将换行符替换为 <br>（支持 \n, \r\n）
+            return escaped.replace(/\r?\n/g, '<br>');
+        },
+
+        // ---------- 缩略图生成逻辑----------
         initializeThumbnail() {
             if (this.video.thumbnail) {
                 this.thumbnail = this.video.thumbnail;
@@ -68,7 +87,7 @@ export default {
                         return thumbnail;
                     }
                 }
-            } catch (e) {}
+            } catch (e) { }
             return null;
         },
         async generateThumbnailFromVideo() {
@@ -162,7 +181,7 @@ export default {
                         this.duration = duration;
                     }
                 }
-            } catch (e) {}
+            } catch (e) { }
         },
         cacheVideoInfo(info) {
             try {
@@ -170,7 +189,7 @@ export default {
                 const cached = JSON.parse(localStorage.getItem(key) || '{}');
                 Object.assign(cached, info, { lastUpdated: Date.now() });
                 localStorage.setItem(key, JSON.stringify(cached));
-            } catch (e) {}
+            } catch (e) { }
         },
         useDefaultThumbnail() {
             if (this.thumbnail) return;
@@ -198,13 +217,26 @@ export default {
         formatDate(dateString) {
             if (!dateString) return '';
             const date = new Date(dateString);
-            if (isNaN(date.getTime())) return dateString;
-            const diff = Math.ceil((Date.now() - date) / (1000 * 60 * 60 * 24));
-            if (diff === 1) return '昨天';
-            if (diff <= 7) return `${diff}天前`;
-            if (diff <= 30) return `${Math.floor(diff / 7)}周前`;
-            if (diff <= 365) return `${Math.floor(diff / 30)}个月前`;
-            return `${Math.floor(diff / 365)}年前`;
+            if (isNaN(date.getTime())) return dateString; // 非法格式，原样返回
+
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+
+            // 判断时间部分是否全为零（纯日期字符串解析后为 00:00:00）
+            const hours = date.getHours();
+            const minutes = date.getMinutes();
+            const seconds = date.getSeconds();
+            const milliseconds = date.getMilliseconds();
+
+            if (hours === 0 && minutes === 0 && seconds === 0 && milliseconds === 0) {
+                // 纯日期，不显示时间
+                return `${year}年${month}月${day}日`;
+            } else {
+                // 包含时间，精确到秒
+                const time = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                return `${year}年${month}月${day}日 ${time}`;
+            }
         }
     }
 };
