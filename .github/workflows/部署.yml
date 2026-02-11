@@ -36,7 +36,7 @@ jobs:
           node-version: 20
 
       # 3. 运行日期补全脚本（修改 video-data.json）
-      - name: 运行日期补全脚本（不全 video-data.json 里缺少的date字段）
+      - name: 运行日期补全脚本（补全 video-data.json 里缺少的date字段）
         run: node scripts/update-video-dates.js
 
       # 4. 提交变更（带 [skip ci]）
