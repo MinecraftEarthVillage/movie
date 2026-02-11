@@ -35,6 +35,6 @@ jobs:
           if git diff --staged --quiet; then
             echo "ℹ️ 没有什么改变的"
           else
-            git commit -m "chore(data): 补齐了所有缺失的视频发布日期 📅"
+            git commit -m "chore(data): 补齐了所有缺失的视频发布日期 📅 [skip ci]"
             git push
           fi
