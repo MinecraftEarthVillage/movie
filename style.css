@@ -643,3 +643,22 @@ body {
     }
 }
 
+.video-page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+.back-home-btn {
+    padding: 8px 16px;
+    background: #00a1d6;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-bottom: 20px;
+}
+.video-player-container video {
+    width: 100%;
+    max-height: 80vh;
+    background: #000;
+}

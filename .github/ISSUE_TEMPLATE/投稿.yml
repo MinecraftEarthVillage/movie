@@ -26,11 +26,10 @@ body:
       placeholder: |
         上传选项（选择其一）：
         1. 通过GitHub附件上传（25MB以内）
-        2. 通过 https://tmpfiles.org/ 上传
-        3. 通过 https://file.io/ 上传
-        4. 通过网盘分享（需提供永久有效链接）
-        
-        链接示例：https://tmpfiles.org/dl/xxxxx/your-video.mp4
+        2. 通过 https://file.io/ 上传
+        3. 通过直链网盘/对象存储平台分享（需提供永久有效的文件直连链接）
+        4.通过普通网盘分享（这个会麻烦点，因为需要我下载再上传放置在我的云存储里）
+
     validations:
       required: true
       
