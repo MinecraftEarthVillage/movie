@@ -93,6 +93,59 @@
     "category": "游戏"
   },
   {
+    "id": "TrainCraft的BUG",
+    "title": "TrainCraft的BUG",
+    "description": 
+    "1.生成的列车如果没有阻挡会一直走下去，并且不受重力影响。\\n2.随便左键点击车体会导致车体部件消失，在完全公开的社区服务器里完整性难以保证（因为谁都可以随手打一下）。",
+    "path": "TrainCraft的BUG.mp4",
+    "date": "2026-02-11",
+    "tags": ["火车","列车","铁路","TrainCraft","BUG","模组","我的世界","服务器","Minecraft","MC"],
+    "category": "游戏"
+  },
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  {
     "id": "棍母",
     "title": "棍母",
     "description": "不存在的视频",
