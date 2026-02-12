@@ -11,6 +11,11 @@ createApp({
         const error = ref(null);
         let timeoutId = null;
 
+        // 统一设置页面标题
+        const setTitle = (title) => {
+            document.title = `${title}_哔哩哔哩_bilibili`;
+        };
+
         // 从 URL 获取 video ID
         const getVideoIdFromUrl = () => {
             const params = new URLSearchParams(window.location.search);
@@ -21,6 +26,7 @@ createApp({
         const loadVideo = async () => {
             isLoading.value = true;
             error.value = null;
+            setTitle('视频加载中……');
             const videoId = getVideoIdFromUrl();
 
             if (!videoId) {
@@ -36,13 +42,15 @@ createApp({
                 const found = videos.find(v => String(v.id) === String(videoId));
                 if (found) {
                     video.value = found;
-                    document.title = `${found.title} - 地球村的“伪”B站`;
+                    setTitle(found.title);
                 } else {
                     error.value = 'not_found';
+                    setTitle('视频去哪了呢？');
                 }
             } catch (err) {
                 console.error('加载视频数据失败:', err);
                 error.value = 'load_error';
+                setTitle('加载失败');
             } finally {
                 isLoading.value = false;
             }
