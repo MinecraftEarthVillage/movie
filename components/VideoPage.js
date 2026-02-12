@@ -90,7 +90,7 @@ export default {
             script.setAttribute('data-repo-id', 'R_kgDOLgVUUg');
             script.setAttribute('data-category', 'General');
             script.setAttribute('data-category-id', 'DIC_kwDOLgVUUs4C2TWo');
-            script.setAttribute('data-mapping', 'url');      // 关键：使用完整 URL 区分不同视频
+            script.setAttribute('data-mapping', 'pathname');
             script.setAttribute('data-strict', '0');
             script.setAttribute('data-reactions-enabled', '1');
             script.setAttribute('data-emit-metadata', '0');
