@@ -4,7 +4,7 @@ import SearchBar from './components/SearchBar.js';
 import CategoryNav from './components/CategoryNav.js';
 import UploadButton from './components/UploadButton.js';
 // 移除 VideoModal 导入，改为 VideoPage
-import VideoPage from './components/VideoPage.js';
+//import VideoPage from './components/VideoPage.js';
 
 const { createApp, ref, computed, onMounted, onUnmounted } = Vue;
 
@@ -14,7 +14,7 @@ createApp({
         SearchBar,
         CategoryNav,
         UploadButton,
-        VideoPage      // 注册新组件
+        //VideoPage 
     },
     setup() {
         // ------- 原有数据 -------

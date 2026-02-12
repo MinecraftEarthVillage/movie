@@ -39,7 +39,7 @@ export default {
     methods: {
         // 直接跳转（刷新页面，实现独立URL）
         goToVideoPage() {
-            window.open(`?video=${this.video.id}`, '_blank');
+            window.open(`video.html?video=${this.video.id}`, '_blank');
         },
 
         // ========== 多行文本安全格式化（供详情组件使用） ==========
