@@ -61,6 +61,8 @@ export default {
                 </div>
             </div>
         </div>
+
+
     `,
     props: {
         video: { type: Object, required: true }
@@ -97,12 +99,8 @@ export default {
         },
         handleVideoError(e) {
             const error = e.target.error;
-            // 检查是否为 CORS 相关错误
-            if (error && (
-                error.message?.includes('CORS') ||
-                error.message?.includes('cross-origin') ||
-                error.code === 18  // MEDIA_ERR_SRC_NOT_SUPPORTED 有时因CORS引起
-            )) {
+            // 只要出错，并且当前没有使用代理，就显示代理按钮
+            if (!this.usingProxy) {
                 this.corsError = true;
             } else {
                 // 其他错误（如404）可显示通用提示

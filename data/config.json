@@ -10,7 +10,8 @@
     { "id": "生活", "name": "生活", "description": "日常记录、美食、旅行、手工", "icon": "fa-home" },
     { "id": "music", "name": "音乐", "description": "音乐现场、翻唱、原创歌曲", "icon": "fa-music" },
     { "id": "动画", "name": "动画", "description": "动漫、二次元相关内容", "icon": "fa-tv" },
-    { "id": "乐子", "name": "乐子", "description": "乐子档案的视频床", "icon": "fas fa-smile" }
+    { "id": "乐子", "name": "乐子", "description": "乐子档案的视频床", "icon": "fas fa-smile" },
+    { "id": "政治", "name": "政治&历史", "description": "政治、历史知识相关视频内容", "icon": "fas fa-flag" }
   ],
   "footerLinks": [
     { "name": "关于我们", "url": "#about" },
