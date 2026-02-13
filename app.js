@@ -32,7 +32,7 @@ createApp({
         const currentView = ref('home');      // 'home' 或 'video'
         const currentVideo = ref(null);       // 当前播放的视频对象
 
-        // ------- 计算属性（完全保留） -------
+        // ------- 计算属性 -------
         const filteredVideos = computed(() => {
             let filtered = videos.value;
             if (currentCategory.value.id !== 'all') {
@@ -42,11 +42,16 @@ createApp({
             }
             if (searchQuery.value) {
                 const query = searchQuery.value.toLowerCase();
-                filtered = filtered.filter(video =>
-                    video.title.toLowerCase().includes(query) ||
-                    video.description.toLowerCase().includes(query) ||
-                    video.tags.some(tag => tag.toLowerCase().includes(query))
-                );
+                filtered = filtered.filter(video => {
+                    // 提供安全的默认值（如果视频没有简介或没有标签）
+                    const title = video.title || '';
+                    const description = video.description || '';
+                    const tags = Array.isArray(video.tags) ? video.tags : [];
+
+                    return title.toLowerCase().includes(query) ||
+                        description.toLowerCase().includes(query) ||
+                        tags.some(tag => (tag || '').toLowerCase().includes(query));
+                });
             }
             return filtered;
         });
@@ -137,8 +142,6 @@ createApp({
             goToVideoPage(video);
         };
 
-        // 保留这些方法以防其他地方使用（但不再用于模态框）
-        const closeVideoModal = () => { };   // 空函数，兼容旧引用
         const searchByTag = (tag) => {
             // 从视频页点击标签：跳回首页并搜索该标签
             backToHome();
@@ -234,7 +237,6 @@ createApp({
             performSearch,
             clearSearch,
             handleVideoClick,
-            closeVideoModal,
             searchByTag,
             scrollToTop,
             nextPage,

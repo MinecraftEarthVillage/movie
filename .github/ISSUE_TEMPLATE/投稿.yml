@@ -37,12 +37,22 @@ body:
     id: video-title
     attributes:
       label: "视频标题"
-      description: "请输入视频标题（2-50个字符）"
+      description: "请输入视频标题（1-50个字符）"
       placeholder: "例如：Vue.js 入门教程"
     validations:
       required: true
       max_length: 50
-      min_length: 2
+      min_length: 1
+  - type: input
+    id: BV
+    attributes:
+      label: "原视频BV号（可选）"
+      description: "请输入原视频的BV号（可选）"
+      placeholder: "例如：BV1A2B3C4D5E"
+    validations:
+      required: false
+      max_length: 12
+      min_length: 12
       
   - type: textarea
     id: video-tags
@@ -79,6 +89,7 @@ body:
         - 音乐
         - 动画
         - 知识
+        - 政治&历史
         - 其他
     validations:
       required: true
