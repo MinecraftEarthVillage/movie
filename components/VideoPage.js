@@ -88,7 +88,7 @@ export default {
             script.src = 'https://giscus.app/client.js';
             script.setAttribute('data-repo', 'MinecraftEarthVillage/movie');
             script.setAttribute('data-repo-id', 'R_kgDOLgVUUg');
-            script.setAttribute('data-category', 'Announcements');
+            script.setAttribute('data-category', '评论区');
             script.setAttribute('data-category-id', 'DIC_kwDOLgVUUs4C2TWn');
             script.setAttribute('data-mapping', 'specific');
             script.setAttribute('data-term', `视频-${this.video.id}`);
