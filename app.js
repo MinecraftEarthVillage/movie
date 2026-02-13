@@ -28,9 +28,6 @@ createApp({
         const videosPerPage = ref(12);
         const isLoading = ref(false);
 
-        // ------- 新增：路由视图状态 -------
-        const currentView = ref('home');      // 'home' 或 'video'
-        const currentVideo = ref(null);       // 当前播放的视频对象
 
         // ------- 计算属性 -------
         const filteredVideos = computed(() => {
@@ -66,8 +63,9 @@ createApp({
             return filteredVideos.value.slice(start, end);
         });
 
-        // ------- 原有方法（未修改部分）-------
-        const loadVideos = async () => {
+        // ------- 数据加载-------
+
+        const loadVideos = async () => {// 加载视频数据
             isLoading.value = true;
             try {
                 const response = await fetch('./data/video-data.json');
@@ -81,7 +79,7 @@ createApp({
             }
         };
 
-        const loadCategories = async () => {
+        const loadCategories = async () => {//加载分区
             try {
                 const response = await fetch('./data/config.json');
                 if (!response.ok) throw new Error('Failed to load config');
@@ -103,12 +101,12 @@ createApp({
             { id: 1, title: '啥也木有', description: '我就是来占位的', path: '', date: '', tags: [], category: '' }
         ];
 
+        // ------- 用户交互方法 -------
         const changeCategory = (category) => {
             currentCategory.value = category;
             currentPage.value = 1;
             scrollToTop();
         };
-
         const performSearch = () => {
             currentPage.value = 1;
         };
@@ -117,62 +115,6 @@ createApp({
             searchQuery.value = '';
             currentPage.value = 1;
         };
-
-        // ------- 移除模态框相关方法，改为路由跳转 -------
-        const goToVideoPage = (video) => {
-            currentVideo.value = video;
-            currentView.value = 'video';
-            // 更新 URL 参数（无刷新）
-            const url = new URL(window.location);
-            url.searchParams.set('video', video.id);
-            history.pushState({}, '', url);
-        };
-
-        const backToHome = () => {
-            currentView.value = 'home';
-            currentVideo.value = null;
-            // 移除 URL 参数
-            const url = new URL(window.location);
-            url.searchParams.delete('video');
-            history.pushState({}, '', url);
-        };
-
-        // 视频卡片点击 —— 直接跳转到独立页面
-        const handleVideoClick = (video) => {
-            goToVideoPage(video);
-        };
-
-        const searchByTag = (tag) => {
-            // 从视频页点击标签：跳回首页并搜索该标签
-            backToHome();
-            searchQuery.value = tag;
-            performSearch();
-        };
-
-        // ------- URL 参数解析（用于直接访问）-------
-        const handlePopState = () => {
-            const params = new URLSearchParams(window.location.search);
-            const videoId = params.get('video');
-            if (videoId) {
-                const found = videos.value.find(v => String(v.id) === String(videoId));
-                if (found) {
-                    currentVideo.value = found;
-                    currentView.value = 'video';
-                } else {
-                    // 无效视频ID，回到首页并清除参数
-                    currentView.value = 'home';
-                    currentVideo.value = null;
-                    const url = new URL(window.location);
-                    url.searchParams.delete('video');
-                    history.replaceState({}, '', url);
-                }
-            } else {
-                currentView.value = 'home';
-                currentVideo.value = null;
-            }
-        };
-
-        // ------- 原有工具方法 -------
         const scrollToTop = () => {
             window.scrollTo({ top: 0, behavior: 'smooth' });
         };
@@ -199,8 +141,14 @@ createApp({
         onMounted(async () => {
             await Promise.all([loadCategories(), loadVideos()]);
 
-            // 初次加载时解析 URL 参数
-            handlePopState();
+
+            // 👇 新增：检查是否有从视频页跳转过来的待搜索标签
+            const pendingTag = sessionStorage.getItem('pendingSearch');
+            if (pendingTag) {
+                searchQuery.value = pendingTag;   // 填入搜索框
+                performSearch();                 // 重置分页并触发搜索
+                sessionStorage.removeItem('pendingSearch'); // 立即清除，避免刷新重复
+            }
 
             window.addEventListener('scroll', handleScroll);
             window.addEventListener('popstate', handlePopState);
@@ -236,16 +184,13 @@ createApp({
             changeCategory,
             performSearch,
             clearSearch,
-            handleVideoClick,
-            searchByTag,
+            
             scrollToTop,
             nextPage,
             prevPage,
 
-            // 新增视图状态
-            currentView,
-            currentVideo,
-            backToHome
+
+            
         };
     }
 }).mount('#app');

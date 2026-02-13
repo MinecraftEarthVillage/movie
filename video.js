@@ -91,7 +91,7 @@ createApp({
             <p>3秒后为您自动跳转至首页</p>
         </div>
         <div v-else>
-            <video-page :video="video" @back="goHome"></video-page>
+            <video-page :video="video" @back="goHome" @search-tag="searchByTag"></video-page>
         </div>
     `,
     methods: {
@@ -102,6 +102,13 @@ createApp({
             const dir = path.substring(0, path.lastIndexOf('/') + 1);
             // 跳转到目录（浏览器会自动补全为 /movie/ 或 /）
             window.location.href = dir || '/';
+        },
+        // 👇 新增：标签点击处理
+        searchByTag(tag) {
+            // 将要搜索的标签暂存到 sessionStorage
+            sessionStorage.setItem('pendingSearch', tag);
+            // 跳回首页
+            this.goHome();
         }
     }
 }).mount('#video-app');
