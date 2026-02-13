@@ -96,7 +96,12 @@ createApp({
     `,
     methods: {
         goHome() {
-            window.location.href = 'index.html';
+            // 获取当前路径的目录部分（去掉文件名）
+            const path = window.location.pathname;
+            // 截取到最后一个 '/' 为止（例如 /movie/）
+            const dir = path.substring(0, path.lastIndexOf('/') + 1);
+            // 跳转到目录（浏览器会自动补全为 /movie/ 或 /）
+            window.location.href = dir || '/';
         }
     }
 }).mount('#video-app');
