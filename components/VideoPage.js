@@ -54,7 +54,9 @@ export default {
     watch: {
         // 视频切换时重新加载 giscus
         video: {
-            handler() {
+            handler(newVal) {
+                this.currentSrc = newVal.path;            // 尝试修复edge手机端的关键更新
+                this.thumbnail = newVal.thumbnail || '';
                 this.$nextTick(() => {
                     this.loadGiscus();
                 });
@@ -93,13 +95,13 @@ export default {
 
             container.appendChild(script);
         },
-        onVideoLoaded({duration}) {
+        onVideoLoaded({ duration }) {
             this.videoDuration = duration;
             this.cacheVideoDuration();
         },
         handleVideoError(e) {
             // 只要出错，并且当前没有使用代理，就显示代理按钮
-                console.warn('视频加载失败:', e.target.error);
+            console.warn('视频加载失败:', e.target.error);
         },
         loadCachedDuration() {
             try {

@@ -164,9 +164,22 @@ export default {
         },
         onLoadedMetadata(e) {
             const video = e.target;
-            this.duration = video.duration;
-            this.cacheVideoDuration();
-            this.$emit('loaded', { duration: video.duration });
+            this._tryGetDuration(video);   // 尝试获取并更新 duration
+        },
+
+        _tryGetDuration(video, maxAttempts = 10) {
+            const check = (attempt = 0) => {
+                if (video.duration && !isNaN(video.duration) && video.duration !== Infinity) {
+                    this.duration = video.duration;
+                    this.cacheVideoDuration();
+                    this.$emit('loaded', { duration: video.duration });
+                    return;
+                }
+                if (attempt < maxAttempts) {
+                    setTimeout(() => check(attempt + 1), 200);
+                }
+            };
+            check();
         },
         onTimeUpdate(e) {
             const video = e.target;
@@ -425,5 +438,18 @@ export default {
             if (newTime > this.duration) newTime = this.duration;
             video.currentTime = newTime;
         },
-    }
+    },
+    watch: {
+        src: {
+            handler(newSrc) {
+                this.currentSrc = newSrc;                // 更新内部地址
+                this.corsError = false;                   // 重置错误状态
+                this.usingProxy = false;
+                this.proxyFailed = false;
+                this.currentProxyIndex = 0;
+                this.$nextTick(() => this.$refs.video?.load()); // 重新加载视频
+            },
+            immediate: true,
+        },
+    },
 };
