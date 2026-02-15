@@ -9,100 +9,102 @@ export default {
             @keyup="handleKeyUp"
             @blur="handleBlur"
         >
-        <!--
-            什么？你开F12了？！
-            不许盗视频😡🤬
-            不许盗视频😡🤬
-            不许盗视频😡🤬
-        -->
-            <video
-                ref="video"
-                :src="currentSrc"
+            <div class="video-wrapper" ref="videoWrapper">
+                <!--
+                    什么？你开F12了？！
+                    不许盗视频😡🤬
+                    不许盗视频😡🤬
+                    不许盗视频😡🤬
+                -->
+                <video
+                    ref="video"
+                    :src="currentSrc"
                 :poster="poster"
-                @loadedmetadata="onLoadedMetadata"
-                @timeupdate="onTimeUpdate"
-                @ended="onEnded"
-                @error="handleVideoError"
-                @waiting="onWaiting"
-                @playing="onPlaying"
-                @canplay="onCanPlay"
-                @progress="onProgress"
-                crossorigin="anonymous"
-                preload="metadata"
-                playsinline
-                webkit-playsinline
-                @play="onPlay"
-                @pause="onPause"
-                @click="togglePlay"
-            >            </video>
+                    @loadedmetadata="onLoadedMetadata"
+                    @timeupdate="onTimeUpdate"
+                    @ended="onEnded"
+                    @error="handleVideoError"
+                    @waiting="onWaiting"
+                    @playing="onPlaying"
+                    @canplay="onCanPlay"
+                    @progress="onProgress"
+                    crossorigin="anonymous"
+                    preload="metadata"
+                    playsinline
+                    webkit-playsinline
+                    @play="onPlay"
+                    @pause="onPause"
+                    @click="togglePlay"
+                >            </video>
 
-            <!-- 缓冲提示层 -->
-            <div v-if="buffering && !error" class="buffering-overlay">
-                <div class="buffering-content">
-                    <i class="fas fa-spinner fa-spin"></i> 缓冲中
-                    <span v-if="downloadSpeed !== null">{{ downloadSpeed.toFixed(0) }} KB/s</span>
-                </div>
-            </div>
-
-            <!-- 错误提示和代理按钮 - 放在视频上方，控件层之下（但实际要浮于所有之上） -->
-            <div v-if="corsError && !usingProxy" class="proxy-tip-overlay">
-                <div class="proxy-tip-content">
-                    <p>视频加载遇到跨域问题？</p>
-                    <button @click="useProxy">尝试使用代理播放</button>
-                </div>
-            </div>
-            <div v-if="proxyFailed" class="proxy-tip-overlay">
-                <div class="proxy-tip-content">
-                    <p>所有代理均失败，请稍后重试</p>
-                    <button @click="resetAndRetry">重试原始链接</button>
-                </div>
-            </div>
-
-            <!-- 自定义控件层 -->
-            <div class="player-controls" v-if="!error">
-                <div class="progress-bar" @mousedown="startSeek" ref="progressBar">
-                    <div class="progress-played" :style="{ width: playedPercentage + '%' }"></div>
-                    <div class="progress-handle" :style="{ left: playedPercentage + '%' }"></div>
+                <!-- 缓冲提示层 -->
+                <div v-if="buffering && !error" class="buffering-overlay">
+                    <div class="buffering-content">
+                        <i class="fas fa-spinner fa-spin"></i> 缓冲中
+                        <span v-if="downloadSpeed !== null">{{ downloadSpeed.toFixed(0) }} KB/s</span>
+                    </div>
                 </div>
 
-                <div class="controls-buttons">
-                    <!-- 左侧控件组 -->
-                    <div class="left-controls">
-                        <button @click="togglePlay" class="control-btn">
-                            <i :class="playing ? 'fas fa-pause' : 'fas fa-play'"></i>
-                        </button>
-                        <span class="time">{{ formatTime(currentTime) }} / {{ formatTime(duration) }}</span>
+                <!-- 错误提示和代理按钮 - 放在视频上方，控件层之下（但实际要浮于所有之上） -->
+                <div v-if="corsError && !usingProxy" class="proxy-tip-overlay">
+                    <div class="proxy-tip-content">
+                        <p>视频加载遇到跨域问题？</p>
+                        <button @click="useProxy">尝试使用代理播放</button>
+                    </div>
+                </div>
+                <div v-if="proxyFailed" class="proxy-tip-overlay">
+                    <div class="proxy-tip-content">
+                        <p>所有代理均失败，请稍后重试</p>
+                        <button @click="resetAndRetry">重试原始链接</button>
+                    </div>
+                </div>
+
+                <!-- 自定义控件层 -->
+                <div class="player-controls"  :class="{ 'controls-visible': controlsVisible }"  v-if="!error">
+                    <div class="progress-bar" @mousedown="startSeek" ref="progressBar">
+                        <div class="progress-played" :style="{ width: playedPercentage + '%' }"></div>
+                        <div class="progress-handle" :style="{ left: playedPercentage + '%' }"></div>
                     </div>
 
-                    <!-- 右侧控件组 -->
-                    <div class="right-controls">
-                        <!-- 倍速选择 -->
-                        <select v-model="playbackRate" @change="changePlaybackRate" class="speed-select">
-                            <option value="0.5">0.5x</option>
-                            <option value="1">1x</option>
-                            <option value="1.5">1.5x</option>
-                            <option value="2">2x</option>
-                        </select>
-
-                        <!-- 音量控制 -->
-                        <div class="volume-control">
-                            <button @click="toggleMute" class="control-btn">
-                                <i :class="muted ? 'fas fa-volume-mute' : (volume > 0.5 ? 'fas fa-volume-up' : (volume > 0 ? 'fas fa-volume-down' : 'fas fa-volume-off'))"></i>
+                    <div class="controls-buttons">
+                        <!-- 左侧控件组 -->
+                        <div class="left-controls">
+                            <button @click="togglePlay" class="control-btn">
+                                <i :class="playing ? 'fas fa-pause' : 'fas fa-play'"></i>
                             </button>
-                            <input type="range" min="0" max="1" step="0.05" v-model.number="volume" @input="changeVolume" class="volume-slider">
+                            <span class="time">{{ formatTime(currentTime) }} / {{ formatTime(duration) }}</span>
                         </div>
 
-                        <!-- 全屏按钮 -->
-                        <button @click="toggleFullscreen" class="control-btn">
-                            <i class="fas fa-expand"></i>
-                        </button>
+                        <!-- 右侧控件组 -->
+                        <div class="right-controls">
+                            <!-- 倍速选择 -->
+                            <select v-model="playbackRate" @change="changePlaybackRate" class="speed-select">
+                                <option value="0.5">0.5x</option>
+                                <option value="1">1x</option>
+                                <option value="1.5">1.5x</option>
+                                <option value="2">2x</option>
+                            </select>
+
+                            <!-- 音量控制 -->
+                            <div class="volume-control">
+                                <button @click="toggleMute" class="control-btn">
+                                    <i :class="muted ? 'fas fa-volume-mute' : (volume > 0.5 ? 'fas fa-volume-up' : (volume > 0 ? 'fas fa-volume-down' : 'fas fa-volume-off'))"></i>
+                                </button>
+                                <input type="range" min="0" max="1" step="0.05" v-model.number="volume" @input="changeVolume" class="volume-slider">
+                            </div>
+
+                            <!-- 全屏按钮 -->
+                            <button @click="toggleFullscreen" class="control-btn">
+                                <i class="fas fa-expand"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- 倍速提示（长按右键时显示） -->
-            <div class="speed-tip" v-show="showSpeedTip">
-                <i class="fas fa-forward"></i> 3倍速播放中
+                <!-- 倍速提示（长按右键时显示） -->
+                <div class="speed-tip" v-show="showSpeedTip">
+                    <i class="fas fa-forward"></i> 3倍速播放中
+                </div>
             </div>
         </div>
     `,
@@ -146,7 +148,11 @@ export default {
             downloadSpeed: null,// 实时网速 (KB/s)
             totalSize: null,// 视频总字节数（用于计算速度）
             lastLoadedBytes: 0,// 上一次已加载字节数
-            lastProgressTime: 0// 上一次progress时间戳
+            lastProgressTime: 0,// 上一次progress时间戳
+            //进度条隐藏
+            controlsVisible: true,// 控件是否可见
+            hideControlsTimer: null,// 隐藏控件的定时器
+            leaveTimer: null// 鼠标离开后的延迟隐藏定时器
         };
     },
     mounted() {
@@ -155,10 +161,31 @@ export default {
         // 使 div 可聚焦
         this.$el.focus();
         this.fetchVideoSize(this.currentSrc); // 尝试获取视频大小
+
+        // 控件自动隐藏逻辑
+        const wrapper = this.$refs.videoWrapper;
+        wrapper.addEventListener('mousemove', this.onUserActivity);
+        wrapper.addEventListener('touchmove', this.onUserActivity);
+        wrapper.addEventListener('mousedown', this.onUserActivity);
+        wrapper.addEventListener('touchstart', this.onUserActivity);
+        wrapper.addEventListener('mouseenter', this.onMouseEnter);
+        wrapper.addEventListener('mouseleave', this.onMouseLeave);
     },
     beforeUnmount() {
         this.pauseVideo();
         this.clearAllLongPress();
+        this.clearHideTimer();
+        if (this.leaveTimer) clearTimeout(this.leaveTimer);
+
+        const wrapper = this.$refs.videoWrapper;
+        if (wrapper) {
+            wrapper.removeEventListener('mousemove', this.onUserActivity);
+            wrapper.removeEventListener('touchmove', this.onUserActivity);
+            wrapper.removeEventListener('mousedown', this.onUserActivity);
+            wrapper.removeEventListener('touchstart', this.onUserActivity);
+            wrapper.removeEventListener('mouseenter', this.onMouseEnter);
+            wrapper.removeEventListener('mouseleave', this.onMouseLeave);
+        }
     },
     methods: {
         togglePlay() {
@@ -419,6 +446,7 @@ export default {
         },
         // 键盘事件处理
         handleKeyDown(e) {
+            this.showControls(); // 任何键盘操作都刷新控件显示
             const key = e.key;
             // 防止页面滚动或触发浏览器快捷键
             if (key === ' ' || key === 'Spacebar' || key === 'Space') {
@@ -529,6 +557,42 @@ export default {
             if (newTime > this.duration) newTime = this.duration;
             video.currentTime = newTime;
         },
+        // 控件显示与隐藏
+        showControls() {
+            this.controlsVisible = true;
+            this.resetHideTimer();
+        },
+        resetHideTimer() {
+            if (this.hideControlsTimer) clearTimeout(this.hideControlsTimer);
+            this.hideControlsTimer = setTimeout(() => {
+                this.controlsVisible = false;
+            }, 3000); // 3秒无操作后隐藏
+        },
+        clearHideTimer() {
+            if (this.hideControlsTimer) {
+                clearTimeout(this.hideControlsTimer);
+                this.hideControlsTimer = null;
+            }
+        },
+        onUserActivity() {
+            // 用户活动（鼠标移动、触摸、点击等）时显示控件并重置定时器
+            this.showControls();
+        },
+        onMouseEnter() {
+            // 鼠标进入视频区域，清除离开定时器并显示控件
+            if (this.leaveTimer) {
+                clearTimeout(this.leaveTimer);
+                this.leaveTimer = null;
+            }
+            this.showControls();
+        },
+        onMouseLeave() {
+            // 鼠标离开视频区域，延迟隐藏（避免闪烁）
+            this.clearHideTimer(); // 清除常规隐藏定时器
+            this.leaveTimer = setTimeout(() => {
+                this.controlsVisible = false;
+            }, 200); // 200ms后隐藏，期间若重新进入则取消
+        }
     },
     watch: {
         src: {
