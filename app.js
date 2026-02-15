@@ -151,12 +151,10 @@ createApp({
             }
 
             window.addEventListener('scroll', handleScroll);
-            window.addEventListener('popstate', handlePopState);
         });
 
         onUnmounted(() => {
             window.removeEventListener('scroll', handleScroll);
-            window.removeEventListener('popstate', handlePopState);
         });
         const handleUpload = () => {
             // 投稿功能暂未实现，可跳转至反馈链接或留空
