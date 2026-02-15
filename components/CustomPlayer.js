@@ -9,10 +9,12 @@ export default {
             @keyup="handleKeyUp"
             @blur="handleBlur"
         >
-        什么？你开F12了？不许盗视频😡🤬<br>
-            不许盗视频😡🤬<br>
-            不许盗视频😡🤬<br>
-            放过我吧/(ㄒoㄒ)/~~纯前端实现的不容易啊！(>_<)~☆<br>
+        <!--
+            什么？你开F12了？！
+            不许盗视频😡🤬
+            不许盗视频😡🤬
+            不许盗视频😡🤬
+        -->
             <video
                 ref="video"
                 :src="currentSrc"
@@ -28,8 +30,7 @@ export default {
                 @play="onPlay"
                 @pause="onPause"
                 @click="togglePlay"
-            >
-            </video>
+            >            </video>
 
             <!-- 错误提示和代理按钮 - 放在视频上方，控件层之下（但实际要浮于所有之上） -->
             <div v-if="corsError && !usingProxy" class="proxy-tip-overlay">
