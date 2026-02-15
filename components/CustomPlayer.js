@@ -23,6 +23,10 @@ export default {
                 @timeupdate="onTimeUpdate"
                 @ended="onEnded"
                 @error="handleVideoError"
+                @waiting="onWaiting"
+                @playing="onPlaying"
+                @canplay="onCanPlay"
+                @progress="onProgress"
                 crossorigin="anonymous"
                 preload="metadata"
                 playsinline
@@ -31,6 +35,14 @@ export default {
                 @pause="onPause"
                 @click="togglePlay"
             >            </video>
+
+            <!-- 缓冲提示层 -->
+            <div v-if="buffering && !error" class="buffering-overlay">
+                <div class="buffering-content">
+                    <i class="fas fa-spinner fa-spin"></i> 缓冲中
+                    <span v-if="downloadSpeed !== null">{{ downloadSpeed.toFixed(0) }} KB/s</span>
+                </div>
+            </div>
 
             <!-- 错误提示和代理按钮 - 放在视频上方，控件层之下（但实际要浮于所有之上） -->
             <div v-if="corsError && !usingProxy" class="proxy-tip-overlay">
@@ -128,7 +140,13 @@ export default {
             showSpeedTip: false,
             originalPlaybackRate: 1,  // 用于恢复长按前的倍速
             leftPressed: false,
-            rightPressed: false
+            rightPressed: false,
+            // 缓冲与网速
+            buffering: true,// 是否显示缓冲层
+            downloadSpeed: null,// 实时网速 (KB/s)
+            totalSize: null,// 视频总字节数（用于计算速度）
+            lastLoadedBytes: 0,// 上一次已加载字节数
+            lastProgressTime: 0// 上一次progress时间戳
         };
     },
     mounted() {
@@ -136,6 +154,7 @@ export default {
         // 禁用默认右键（已通过 @contextmenu.prevent 实现）
         // 使 div 可聚焦
         this.$el.focus();
+        this.fetchVideoSize(this.currentSrc); // 尝试获取视频大小
     },
     beforeUnmount() {
         this.pauseVideo();
@@ -153,12 +172,12 @@ export default {
         pauseVideo() {
             this.$refs.video?.pause();
         },
-        // 新增：视频开始播放时
+        //视频开始播放时
         onPlay() {
             this.playing = true;
         },
 
-        // 新增：视频暂停时
+        //视频暂停时
         onPause() {
             this.playing = false;
         },
@@ -237,7 +256,71 @@ export default {
                 container.requestFullscreen();
             }
         },
-        // 以下为 CORS 代理相关方法（从原组件迁移）
+        // 缓冲事件处理
+        onWaiting() {
+            this.buffering = true;
+        },
+        onPlaying() {
+            this.buffering = false;
+        },
+        onCanPlay() {
+            this.buffering = false;
+        },
+        onError() {
+            this.buffering = false;
+        },
+        // 进度事件：估算网速
+        onProgress() {
+            const video = this.$refs.video;
+            if (!video || !video.buffered.length || !this.duration) return;
+
+            // 获取当前缓冲的末尾时间
+            const bufferedEnd = video.buffered.end(video.buffered.length - 1);
+
+            // 如果有总大小，基于字节计算速度
+            if (this.totalSize && this.duration > 0) {
+                const loadedBytes = (bufferedEnd / this.duration) * this.totalSize;
+                const now = Date.now();
+
+                if (this.lastLoadedBytes > 0 && this.lastProgressTime > 0) {
+                    const deltaBytes = loadedBytes - this.lastLoadedBytes;
+                    const deltaTime = (now - this.lastProgressTime) / 1000; // 秒
+                    if (deltaTime > 0 && deltaBytes > 0) {
+                        const speedBps = (deltaBytes * 8) / deltaTime; // 比特/秒
+                        const speedKBs = speedBps / 1024 / 8;          // KB/s
+                        this.downloadSpeed = speedKBs;
+                    }
+                }
+
+                this.lastLoadedBytes = loadedBytes;
+                this.lastProgressTime = now;
+            } else {
+                // 降级方案：使用网络信息 API（如果可用）
+                if (navigator.connection && navigator.connection.downlink) {
+                    // downlink 单位 Mbps，转为 KB/s
+                    this.downloadSpeed = (navigator.connection.downlink * 1024) / 8;
+                } else {
+                    this.downloadSpeed = null;
+                }
+            }
+        },
+        // 获取视频总大小（通过 HEAD 请求）
+        async fetchVideoSize(url) {
+            if (!url) return;
+            try {
+                const response = await fetch(url, { method: 'HEAD', mode: 'cors' });
+                const contentLength = response.headers.get('content-length');
+                if (contentLength) {
+                    this.totalSize = parseInt(contentLength, 10);
+                } else {
+                    this.totalSize = null;
+                }
+            } catch (e) {
+                // 跨域或其他错误，忽略
+                this.totalSize = null;
+            }
+        },
+        // 以下为 CORS 代理相关方法
         handleVideoError(e) {
             const error = e.target.error;
             if (!this.usingProxy) {
@@ -247,12 +330,14 @@ export default {
                 this.proxyFailed = true;
             }
             this.$emit('error', error);
+            this.buffering = false; // 出错时关闭缓冲提示
         },
         useProxy() {
             if (!this.src) return;
             this.usingProxy = true;
             this.corsError = false;
             this.proxyFailed = false;
+            this.buffering = true;   // 切换代理时重新显示缓冲
 
             const proxyUrl = this.proxyList[this.currentProxyIndex];
             if (!proxyUrl) {
@@ -269,6 +354,9 @@ export default {
             }
             this.currentSrc = proxiedSrc;
 
+            // 尝试获取新代理地址的视频大小
+            this.fetchVideoSize(proxiedSrc);
+
             const nextProxy = () => {
                 this.currentProxyIndex++;
                 if (this.currentProxyIndex < this.proxyList.length) {
@@ -276,6 +364,7 @@ export default {
                 } else {
                     this.proxyFailed = true;
                     this.usingProxy = false;
+                    this.buffering = false;
                 }
             };
 
@@ -297,6 +386,8 @@ export default {
             this.corsError = true;
             this.proxyFailed = false;
             this.currentProxyIndex = 0;
+            this.buffering = true;
+            this.fetchVideoSize(this.src);
         },
         // 时长缓存
         loadCachedDuration() {
@@ -442,11 +533,16 @@ export default {
     watch: {
         src: {
             handler(newSrc) {
-                this.currentSrc = newSrc;                // 更新内部地址
-                this.corsError = false;                   // 重置错误状态
+                this.currentSrc = newSrc;// 更新内部地址
+                this.corsError = false;// 重置错误状态
                 this.usingProxy = false;
                 this.proxyFailed = false;
                 this.currentProxyIndex = 0;
+                this.buffering = true;// 切换视频时显示缓冲
+                this.downloadSpeed = null;
+                this.totalSize = null;
+                this.lastLoadedBytes = 0;
+                this.lastProgressTime = 0;
                 this.$nextTick(() => this.$refs.video?.load()); // 重新加载视频
             },
             immediate: true,
