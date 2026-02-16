@@ -355,6 +355,8 @@ body {
     color: #61666d;
 }
 
+
+
 .video-player {
     width: 100%;
     margin-bottom: 20px;
@@ -544,6 +546,7 @@ body {
         font-size: 13px;
         height: 36px;
     }
+
 
     .video-details h2 {
         font-size: 18px;
@@ -864,19 +867,21 @@ body {
     font-size: 1.5rem;
 }
 
-
-/* 添加到 style.css 中 */
 .custom-player:fullscreen {
+    background: #000; /* 关键：黑色背景 */
     display: flex !important;
-    align-items: center !important;    /* 垂直居中 */
-    justify-content: center !important; /* 水平居中 */
-
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100%;
+    height: 100%;
+        max-height: none;
+    max-width: none;
 }
 
 .custom-player:fullscreen video {
-    /* 让视频在保持宽高比的前提下，适应容器 */
-    width: auto;
-    height: auto;
-    max-width: 100%;
-    max-height: 100%;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    max-height: none;
+    max-width: none;
 }
