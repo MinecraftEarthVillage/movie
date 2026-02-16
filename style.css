@@ -621,7 +621,6 @@ body {
 .custom-player {
     position: relative;
     width: 100%;
-    background: #000;
     border-radius: 8px;
     overflow: hidden;
 }
@@ -867,21 +866,25 @@ body {
     font-size: 1.5rem;
 }
 
+/* 全屏模式下的样式调整，确保视频在全屏时正确居中显示
+并且保持纵横比扩展到最长边刚好抵达屏幕边缘，
+最多两条黑边（横向宽视频仅上下黑边 / 竖屏窄视频仅左右黑边） */
 .custom-player:fullscreen {
-    background: #000; /* 关键：黑色背景 */
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
     width: 100%;
     height: 100%;
-        max-height: none;
-    max-width: none;
 }
-
+.custom-player:fullscreen .video-wrapper {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+}
 .custom-player:fullscreen video {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    max-height: none;
-    max-width: none;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+    max-height: none !important;
+    max-width: none !important;
 }
