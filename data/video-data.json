@@ -4,7 +4,6 @@
     "title": "哪吒与变形金刚第一集测试版",
     "description": "废案",
     "path": "video/https://hayonobiry4qbanf.public.blob.vercel-storage.com/%E8%A7%86%E9%A2%91/%E5%93%AA%E5%90%92%E4%B8%8E%E5%8F%98%E5%BD%A2%E9%87%91%E5%88%9A%E7%AC%AC%E4%B8%80%E9%9B%86%E6%B5%8B%E8%AF%95%E7%89%88.mp4",
-    "views": 1,
     "tags": [
       "变形金刚",
       "大黄蜂",
@@ -19,7 +18,6 @@
     "title": "列车实拍",
     "description": "只是个列车而已",
     "path": "video/https://hayonobiry4qbanf.public.blob.vercel-storage.com/%E8%A7%86%E9%A2%91/0AB97086DB3DAED7890DC97AA92B0A36.mp4",
-    "views": 1,
     "tags": [
       "火车",
       "列车",
@@ -36,7 +34,6 @@
     "title": "撕试卷",
     "description": "一个傻逼在考试时突然撕碎别人试卷",
     "path": "video/https://hayonobiry4qbanf.public.blob.vercel-storage.com/%E8%A7%86%E9%A2%91/%E6%92%95%E8%AF%95%E5%8D%B7.mp4",
-    "views": 1,
     "tags": [
       "傻逼",
       "乐子",
@@ -198,7 +195,7 @@
     "category": "游戏"
   },
   {
-    "id": "当中华人民共和国苏维埃起来",
+    "id": "BV1RK4y127c4",
     "title": "当中华人民共和国苏维埃起来",
     "description": "https://m.bilibili.com/video/av9316504?from=search&seid=4022490746378155748 \n在原作基础上添加歌词字幕\n（话说祖国这么社会主义本来就算是“新时代苏维埃”吧）",
     "path": "video/https://mp-7de4d1b4-2d5c-4d5a-b612-88bad0996223.cdn.bspapp.com/%E5%89%8D%E8%B4%A6%E5%8F%B7%E8%A7%86%E9%A2%91/当中国苏维埃起来.mp4",
@@ -213,7 +210,7 @@
     "date": "2021-04-04 10:22:48"
   },
   {
-    "id": "1.2~1.19的世界地图在各版本打开测试",
+    "id": "BV1Jm4y1t7sm",
     "title": "1.2~1.19的世界地图在各版本打开测试",
     "path": "video/https://mp-7de4d1b4-2d5c-4d5a-b612-88bad0996223.cdn.bspapp.com/前账号视频/1.2~1.19的世界地图在各版本打开测试.mp4",
     "tags": [
@@ -230,9 +227,9 @@
     "date": "2023-05-21 15:05:26"
   },
   {
-    "id": "[1_1000]世界地图——乘坐🚅高铁穿过欧亚大陆.mp4",
+    "id": "BV1NV411K7oG",
     "title": "[1_1000]世界地图——乘坐🚅高铁穿过欧亚大陆.mp4",
-    "path": "video/https://mp-7de4d1b4-2d5c-4d5a-b612-88bad0996223.cdn.bspapp.com/前账号视频/[1_1000]世界地图——乘坐🚅高铁穿过欧亚大陆.mp4",
+    "path": "https://github.com/MinecraftEarthVillage/movie2/raw/refs/heads/main/[1_1000]世界地图——乘坐🚅高铁穿过欧亚大陆.mp4",
     "tags": [
       "地球",
       "我的世界",
@@ -401,6 +398,66 @@
     ],
     "category": "政治",
     "date": "2025-05-03 10:54:46"
+  },
+  {
+    "id": "BV1Pk4y1L7dN",
+    "title": "MC星河时期简史",
+    "description": "https://www.ali213.net/news/html/2015-1/136883.html\n原视频已消失，但我发现我还存有多年前的视频文件。紧急发布！目前有关的只剩下这个游戏资讯网站",
+    "path": "https://github.com/MinecraftEarthVillage/movie2/raw/refs/heads/main/MC%E6%98%9F%E6%B2%B3%E6%97%B6%E6%9C%9F%E7%AE%80%E5%8F%B2.mp4",
+    "tags": [
+      "星河",
+      "太空",
+      "宇宙",
+      "动漫",
+      "Minecraft",
+      "星系"
+    ],
+    "category": "游戏",
+    "date": "2023-05-14 16:26:51"
+  },
+  {
+    "id": "BV1vP411n7A1",
+    "title": "「中国力量」共和国的70年",
+    "description": "(该视频于2022年上传，历经2年审核)",
+    "path": "https://github.com/MinecraftEarthVillage/movie2/raw/refs/heads/main/%E3%80%8C%E4%B8%AD%E5%9B%BD%E5%8A%9B%E9%87%8F%E3%80%8D%E5%85%B1%E5%92%8C%E5%9B%BD%E7%9A%8470%E5%B9%B4.mp4",
+    "tags": [
+      "星海",
+      "爱国",
+      "解放军",
+      "中国军人",
+      "中国人民解放军",
+      "祖国",
+      "厉害了我的国",
+      "中国力量",
+      "习近平",
+      "毛泽东",
+      "邓小平",
+      "江泽民",
+      "胡锦涛",
+      "开国大典"
+    ],
+    "category": "政治",
+    "date": "2024-04-30 17:54:21"
+  },
+  {
+    "id": "BV1mnWRenEXM",
+    "title": "[2K]我的世界绝美延时摄影-见证高塔平地起",
+    "description": "建设者是IsabellaX，腐竹在旁边录制\n地图链接：http://map.globalvillage.广东/\n服务器地址（JAVA/BE）：globalvillage.广东\n可用版本：1.8-1.21\n要使用MTR模组，请用1.20.1forge\n可选MOD：Minecraft Transit Railway\n\n视频中始终不加载那部分区块是因为存在MTR模组的方块，因此作为拍摄者的fabric客户端无法接收到那部分数据",
+    "path": "https://github.com/MinecraftEarthVillage/movie2/raw/refs/heads/main/[2K]我的世界绝美延时摄影-见证高塔平地起.m3u8",
+    "tags": [
+      "我的世界",
+      "风景",
+      "MC",
+      "沙盒游戏",
+      "延时摄影",
+      "建筑",
+      "地球",
+      "Minecraft",
+      "文明模拟",
+      "像素风"
+    ],
+    "category": "游戏",
+    "date": "2024-08-24 10:02:44"
   },
   {
     "id": "棍母",
