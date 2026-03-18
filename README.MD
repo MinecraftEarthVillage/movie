@@ -19,7 +19,7 @@
 1. **提交内容**
   1. 前往 [反馈区](issues)
   2. 点击"New issue"创建新的投稿申请
-  3. 按格式提供视频信息、被删原因（可选）、视频文件（太大的可提供网盘链接、对象存储直链等）
+  3. 按格式提供视频信息、被删原因（可选）、视频文件。若文件过大，可以提供网盘链接、对象存储直链等；或者将视频文件放置在你的仓库内并开启 GitHub Pages。**注意**：请勿使用 `https://github.com/用户名/仓库名/raw/refs/heads/main/...` 这样的文件链接，因为有跨域限制。对于超过 GitHub 限制的单文件，可以使用我们的[切片小工具](#小工具)进行切分，然后提供生成的 m3u8 文件链接即可。
 2. **审核验证**：团队核实视频的删除情况与内容性质
 3. **存档上线**：通过审核的内容将加入网页，获得新的访问地址
 4. **作者标注**：保留原始创作者信息，尊重原创精神
@@ -72,6 +72,107 @@
 - **网站链接：** https://globalvillage.广东/movie
 - **投稿渠道**：通过GitHubIssues提交
 - **讨论群组**：[Discord](https://discord.gg/FTUqSrCD2T)
+
+## 小工具
+
+### 切片
+
+<details>
+<summary>将大视频文件切分成10MB~~~</summary>
+
+```CMD/POWERSHELL脚本 需安装FFmpeg
+
+@echo off
+setlocal enabledelayedexpansion
+
+REM 检查参数
+if "%~1"=="" (
+    echo 用法: %~nx0 ^<视频文件^>
+    echo 功能: 将视频切成 HLS 流（m3u8+ts），每段大小 ≤ 5MB，保存到视频文件名（不含扩展名）的文件夹中
+    exit /b 1
+)
+
+REM 获取输入文件的完整路径并验证存在性
+set "input=%~f1"
+if not exist "%input%" (
+    echo 错误: 文件 "%input%" 不存在
+    exit /b 1
+)
+
+REM 提取文件名（不含扩展名）用于后续输出
+set "basename=%~n1"
+
+REM 创建输出目录：原视频所在目录\原视频标题
+set "outdir=%~dpn1"
+if not exist "%outdir%" mkdir "%outdir%"
+
+echo 正在分析视频文件: "%input%"
+
+REM --- 第1步：获取视频文件总大小（字节） ---
+for %%I in ("%input%") do set "file_size=%%~zI"
+REM 设定目标分片最大字节数
+set /a target_size=5*1000*1000
+
+REM --- 第2步：获取视频总时长（秒） ---
+for /f "usebackq delims=." %%a in (`ffprobe -v error -show_entries format^=duration -of default^=noprint_wrappers^=1:nokey^=1 "%input%"`) do set "duration_float=%%a"
+set /a duration_sec=!duration_float! + 1
+
+echo 文件总大小: !file_size! 字节
+echo 视频时长: !duration_sec! 秒 (向上取整)
+
+REM --- 第3步：计算最少分段数 ---
+set /a segments=!file_size! / !target_size!
+set /a remainder=!file_size! %% !target_size!
+if !remainder! gtr 0 set /a segments=!segments! + 1
+
+echo 目标每段大小: !target_size! 字节 (不超过20MB)
+echo 至少需要分段数: !segments!
+
+REM 计算分段数的位数，用于生成带前导零的序号
+set /a temp=segments
+set "ndigits=0"
+:count_digits
+if !temp! gtr 0 (
+    set /a ndigits+=1
+    set /a temp/=10
+    goto count_digits
+)
+if !ndigits! equ 0 set ndigits=1
+echo 数字位数: !ndigits!
+
+REM 构造文件名格式字符串，例如 %%03d.ts
+set "fmt=%%0!ndigits!d.ts"
+
+REM --- 第4步：计算每段近似时长 ---
+set /a segment_time=!duration_sec! / !segments!
+set /a time_remainder=!duration_sec! %% !segments!
+if !time_remainder! gtr 0 set /a segment_time=!segment_time! + 1
+echo 计算得每段时长: !segment_time! 秒
+
+echo 开始生成 HLS 切片...
+
+REM --- 第5步：执行 HLS 切片命令 ---
+ffmpeg -i "%input%" -c copy -start_number 0 -hls_time !segment_time! -hls_list_size 0 -hls_segment_filename "%outdir%\!basename!!fmt!" -f hls "%outdir%\!basename!.m3u8"
+
+if errorlevel 1 (
+    echo 切片过程中出现错误，请检查 FFmpeg 输出。
+    exit /b 1
+) else (
+    echo HLS 切片完成！文件保存在 "%outdir%"
+    exit /b 0
+)
+
+```
+</details>
+
+### 无损压缩
+
+```同样需要安装FFmpeg
+
+ffmpeg -i "原视频.mp4" -c:v libx264 -crf 28 -c:a aac -b:a 128k 原视频_已压缩.mp4
+pause
+
+```
 
 ---
 
