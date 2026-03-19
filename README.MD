@@ -69,7 +69,7 @@
 - 如版权方要求删除特定内容，我们将及时响应
 
 ## 🌐 立即访问
-- **网站链接：** https://globalvillage.广东/movie
+- **网站链接：** https://bilibili.globalvillage.广东 或 https://globalvillage.广东/movie
 - **投稿渠道**：通过GitHubIssues提交
 - **讨论群组**：[Discord](https://discord.gg/FTUqSrCD2T)
 
