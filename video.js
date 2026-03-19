@@ -82,6 +82,10 @@ createApp({
                 if (found) {
                     video.value = found;
                     setTitle(found.title);
+                    // 更新URL参数
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('video', videoId);
+                    window.history.pushState({}, '', url.toString());
                 }
             } catch (err) {
                 console.error('加载视频数据失败:', err);

@@ -173,6 +173,12 @@ input:checked + .toggle-slider:before {
     font-size: 13px;
     color: #9499a0;
     white-space: nowrap;
+    flex-shrink: 0;
+    position: static;
+    background-color: transparent;
+    bottom: auto;
+    right: auto;
+    color: #9499a0;
 }
 
 /* 响应式设计 - 手机端适配 */

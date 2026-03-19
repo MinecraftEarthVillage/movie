@@ -119,6 +119,7 @@ export default {
             playing: false,
             currentTime: 0,
             duration: 0,
+            savedTime: 0,
             playedPercentage: 0,
             volume: 1,
             muted: false,
@@ -219,8 +220,12 @@ export default {
         onLoadedMetadata(e) {
             const video = e.target;
             this._tryGetDuration(video);   // 尝试获取并更新 duration
+            // 恢复播放进度
+            if (this.savedTime > 0) {
+                video.currentTime = this.savedTime;
+                this.currentTime = this.savedTime;
+            }
         },
-
         _tryGetDuration(video, maxAttempts = 10) {
             const check = (attempt = 0) => {
                 if (video.duration && !isNaN(video.duration) && video.duration !== Infinity) {
@@ -240,6 +245,10 @@ export default {
             this.currentTime = video.currentTime;
             if (this.duration) {
                 this.playedPercentage = (this.currentTime / this.duration) * 100;
+                // 每5秒缓存一次进度
+                if (Math.floor(this.currentTime) % 5 === 0) {
+                    this.cacheVideoDuration();
+                }
             }
         },
         onEnded() {
@@ -431,8 +440,9 @@ export default {
                 const key = `video_${this.videoId}`;
                 const cached = localStorage.getItem(key);
                 if (cached) {
-                    const { duration } = JSON.parse(cached);
-                    this.duration = duration;
+                    const { duration, currentTime } = JSON.parse(cached);
+                    if (duration) this.duration = duration;
+                    if (currentTime) this.savedTime = currentTime;
                 }
             } catch (e) { }
         },
@@ -442,6 +452,7 @@ export default {
                 const key = `video_${this.videoId}`;
                 const cached = JSON.parse(localStorage.getItem(key) || '{}');
                 cached.duration = this.duration;
+                cached.currentTime = this.currentTime;
                 cached.lastUpdated = Date.now();
                 localStorage.setItem(key, JSON.stringify(cached));
             } catch (e) { }

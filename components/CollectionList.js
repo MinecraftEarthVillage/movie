@@ -51,6 +51,22 @@ export default {
         this.loadCollectionData();
         this.loadAutoPlaySetting();
     },
+    watch: {
+        currentVideoId: {
+            handler(newVideoId) {
+                // 当当前视频ID变化时，更新currentIndex
+                if (this.collection) {
+                    const index = this.collection['视频列表'].indexOf(newVideoId);
+                    if (index !== -1) {
+                        this.currentIndex = index;
+                    }
+                } else {
+                    // 如果collection还没有加载，重新加载
+                    this.loadCollectionData();
+                }
+            }
+        }
+    },
     methods: {
         async loadCollectionData() {
             try {
@@ -95,15 +111,24 @@ export default {
             return video ? video.title : `视频 ${videoId}`;
         },
         getVideoDuration(videoId) {
-            const video = this.videos.find(v => String(v.id) === String(videoId));
-            if (!video || !video.duration) return '00:00';
-            
-            const seconds = video.duration;
-            const h = Math.floor(seconds / 3600);
-            const m = Math.floor((seconds % 3600) / 60);
-            const s = Math.floor(seconds % 60);
-            return h ? `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
-                : `${m}:${s.toString().padStart(2, '0')}`;
+            // 从localStorage中获取视频时长
+            try {
+                const key = `video_${videoId}`;
+                const cached = localStorage.getItem(key);
+                if (cached) {
+                    const { duration } = JSON.parse(cached);
+                    if (duration) {
+                        const h = Math.floor(duration / 3600);
+                        const m = Math.floor((duration % 3600) / 60);
+                        const s = Math.floor(duration % 60);
+                        return h ? `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
+                            : `${m}:${s.toString().padStart(2, '0')}`;
+                    }
+                }
+            } catch (e) {
+                console.error('读取视频时长失败:', e);
+            }
+            return '00:00';
         },
         playVideo(videoId) {
             this.$emit('play-video', videoId);
