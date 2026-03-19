@@ -55,7 +55,8 @@ export default {
             currentIndex: 0,
             autoPlay: false,
             showDescription: false,
-            isExpanded: false
+            isExpanded: false,
+            durations: {}
         };
     },
     computed: {
@@ -81,6 +82,14 @@ export default {
                     this.loadCollectionData();
                 }
             }
+        },
+        videos: {
+            handler(newVideos) {
+                if (this.collection && newVideos.length > 0) {
+                    this.loadAllDurations();
+                }
+            },
+            immediate: true
         }
     },
     methods: {
@@ -98,9 +107,8 @@ export default {
                         this.currentIndex = index;
                         // 合集数据加载完成后触发事件
                         this.$emit('collection-loaded');
-                        
-                        // 加载合集里所有视频的时长
-                        this.preloadVideoDurations(coll['视频列表']);
+                        // 加载所有视频时长
+                        this.loadAllDurations();
                         break;
                     }
                 }
@@ -108,41 +116,59 @@ export default {
                 console.error('加载合集数据失败:', err);
             }
         },
-        preloadVideoDurations(videoIds) {
-            videoIds.forEach(videoId => {
-                // 检查是否已经有缓存的时长
-                const key = `video_${videoId}`;
-                const cached = localStorage.getItem(key);
-                if (!cached) {
-                    // 查找视频对象
-                    const video = this.videos.find(v => String(v.id) === String(videoId));
-                    if (video && video.path) {
-                        // 创建隐藏的video元素来获取时长
-                        const videoElement = document.createElement('video');
-                        videoElement.src = video.path;
-                        videoElement.preload = 'metadata';
-                        
-                        videoElement.addEventListener('loadedmetadata', () => {
-                            if (videoElement.duration) {
-                                // 缓存时长到localStorage
-                                localStorage.setItem(key, JSON.stringify({
-                                    duration: videoElement.duration,
-                                    lastUpdated: Date.now()
-                                }));
-                                // 触发更新，重新渲染时长
-                                this.$forceUpdate();
-                            }
-                            // 清理
-                            videoElement.remove();
-                        });
-                        
-                        videoElement.addEventListener('error', () => {
-                            // 出错时清理
-                            videoElement.remove();
-                        });
+        getVideoPath(videoId) {
+            const video = this.videos.find(v => String(v.id) === String(videoId));
+            return video ? video.path : '';
+        },
+        cleanupVideo(video) {
+            video.src = '';
+            video.load();
+            if (video.parentNode) video.parentNode.removeChild(video);
+        },
+        async fetchDuration(videoId) {
+            const key = `video_${videoId}`;
+            if (localStorage.getItem(key)) return;
+            
+            const videoPath = this.getVideoPath(videoId);
+            if (!videoPath) {
+                console.warn(`视频 ${videoId} 的路径不存在，跳过加载`);
+                return;
+            }
+            
+            const video = document.createElement('video');
+            video.preload = 'metadata';
+            video.src = videoPath;
+            video.style.display = 'none';
+            document.body.appendChild(video);
+            
+            return new Promise(resolve => {
+                const timeout = setTimeout(() => {
+                    console.warn(`加载视频 ${videoId} 元数据超时`);
+                    this.cleanupVideo(video);
+                    resolve(null);
+                }, 10000);
+                
+                video.onloadedmetadata = () => {
+                    clearTimeout(timeout);
+                    const duration = video.duration;
+                    if (duration) {
+                        localStorage.setItem(key, JSON.stringify({ 
+                            duration, 
+                            lastUpdated: Date.now() 
+                        }));
+                        this.durations[videoId] = duration;
                     }
-                }
+                    this.cleanupVideo(video);
+                    resolve(duration);
+                };
             });
+        },
+        async loadAllDurations() {
+            if (!this.collection || !this.collection['视频列表']) return;
+            
+            for (const videoId of this.collection['视频列表']) {
+                this.fetchDuration(videoId);
+            }
         },
         loadAutoPlaySetting() {
             try {
@@ -166,6 +192,16 @@ export default {
             return video ? video.title : `视频 ${videoId}`;
         },
         getVideoDuration(videoId) {
+            // 优先从响应式对象中获取时长
+            if (this.durations[videoId]) {
+                const duration = this.durations[videoId];
+                const h = Math.floor(duration / 3600);
+                const m = Math.floor((duration % 3600) / 60);
+                const s = Math.floor(duration % 60);
+                return h ? `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
+                    : `${m}:${s.toString().padStart(2, '0')}`;
+            }
+            
             // 从localStorage中获取视频时长
             try {
                 const key = `video_${videoId}`;
@@ -173,6 +209,8 @@ export default {
                 if (cached) {
                     const { duration } = JSON.parse(cached);
                     if (duration) {
+                        // 同时更新到响应式对象中
+                        this.durations[videoId] = duration;
                         const h = Math.floor(duration / 3600);
                         const m = Math.floor((duration % 3600) / 60);
                         const s = Math.floor(duration % 60);
