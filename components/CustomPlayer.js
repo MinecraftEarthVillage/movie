@@ -113,7 +113,7 @@ export default {
         poster: { type: String, default: '' },
         videoId: { type: [String, Number], required: true }
     },
-    emits: ['loaded', 'error', 'ended'],
+    emits: ['loaded', 'error', 'ended', 'resize'],
     data() {
         return {
             playing: false,
@@ -170,6 +170,9 @@ export default {
         wrapper.addEventListener('touchstart', this.onUserActivity);
         wrapper.addEventListener('mouseenter', this.onMouseEnter);
         wrapper.addEventListener('mouseleave', this.onMouseLeave);
+
+        // 监听视频尺寸变化
+        this.observeVideoResize();
     },
     beforeUnmount() {
         this.pauseVideo();
@@ -185,6 +188,11 @@ export default {
             wrapper.removeEventListener('touchstart', this.onUserActivity);
             wrapper.removeEventListener('mouseenter', this.onMouseEnter);
             wrapper.removeEventListener('mouseleave', this.onMouseLeave);
+        }
+
+        // 清理ResizeObserver
+        if (this.resizeObserver) {
+            this.resizeObserver.disconnect();
         }
     },
     methods: {
@@ -593,6 +601,17 @@ export default {
             this.leaveTimer = setTimeout(() => {
                 this.controlsVisible = false;
             }, 200); // 200ms后隐藏，期间若重新进入则取消
+        },
+        // 监听视频尺寸变化
+        observeVideoResize() {
+            const video = this.$refs.video;
+            if (!video) return;
+
+            this.resizeObserver = new ResizeObserver(() => {
+                this.$emit('resize');
+            });
+
+            this.resizeObserver.observe(video);
         }
     },
     watch: {

@@ -19,6 +19,7 @@ export default {
                         @loaded="onVideoLoaded"
                         @error="handleVideoError"
                         @ended="handleVideoEnded"
+                        @resize="updateWrapperHeight"
                     ></custom-player>
                 </div>
                 
@@ -129,8 +130,10 @@ export default {
         onVideoLoaded({ duration }) {
             this.videoDuration = duration;
             this.cacheVideoDuration();
-            // 视频加载后更新高度
-            this.updateWrapperHeight();
+            // 视频加载后更新高度，使用nextTick确保DOM已更新
+            this.$nextTick(() => {
+                this.updateWrapperHeight();
+            });
         },
         handleVideoError(e) {
             // 只要出错，并且当前没有使用代理，就显示代理按钮
