@@ -3,7 +3,7 @@
     "id": 1,
     "title": "哪吒与变形金刚第一集测试版",
     "description": "废案",
-    "path": "video/https://hayonobiry4qbanf.public.blob.vercel-storage.com/%E8%A7%86%E9%A2%91/%E5%93%AA%E5%90%92%E4%B8%8E%E5%8F%98%E5%BD%A2%E9%87%91%E5%88%9A%E7%AC%AC%E4%B8%80%E9%9B%86%E6%B5%8B%E8%AF%95%E7%89%88.mp4",
+    "path": "video/%E5%93%AA%E5%90%92%E4%B8%8E%E5%8F%98%E5%BD%A2%E9%87%91%E5%88%9A%E7%AC%AC%E4%B8%80%E9%9B%86%E6%B5%8B%E8%AF%95%E7%89%88.mp4",
     "tags": [
       "变形金刚",
       "大黄蜂",
@@ -33,7 +33,7 @@
     "id": "傻逼",
     "title": "撕试卷",
     "description": "一个傻逼在考试时突然撕碎别人试卷",
-    "path": "video/https://hayonobiry4qbanf.public.blob.vercel-storage.com/%E8%A7%86%E9%A2%91/%E6%92%95%E8%AF%95%E5%8D%B7.mp4",
+    "path": "video/%E6%92%95%E8%AF%95%E5%8D%B7.mp4",
     "tags": [
       "傻逼",
       "乐子",
@@ -49,7 +49,7 @@
     "id": "S2E1",
     "title": "迪比狗第二季测试版",
     "description": "废案",
-    "path": "video/https://hayonobiry4qbanf.public.blob.vercel-storage.com/%E8%A7%86%E9%A2%91/S2E1.mp4",
+    "path": "video/S2E1.mp4",
     "tags": [
       "狗"
     ],
@@ -60,7 +60,7 @@
     "id": "mcxiaolulu传",
     "title": "mcxiaolulu传",
     "description": "互联网神人",
-    "path": "video/https://hayonobiry4qbanf.public.blob.vercel-storage.com/%E8%A7%86%E9%A2%91/lezi/mcxiaolulu/%E5%8E%8B%E8%BF%AB%E7%BE%A4%E6%88%90%E5%91%98/12.mp4",
+    "path": "video/lezi/mcxiaolulu/%E5%8E%8B%E8%BF%AB%E7%BE%A4%E6%88%90%E5%91%98/12.mp4",
     "date": "2025-08-14",
     "tags": [
       "傻逼"
@@ -71,7 +71,7 @@
     "id": "pankuler1",
     "title": "pankuler录屏1",
     "description": "",
-    "path": "video/https://hayonobiry4qbanf.public.blob.vercel-storage.com/%E8%A7%86%E9%A2%91/lezi/pankuler%E4%BC%A0/Screenrecorder-2024-04-16-19-59-50-487.mp4",
+    "path": "video/lezi/pankuler%E4%BC%A0/Screenrecorder-2024-04-16-19-59-50-487.mp4",
     "date": "2024-04-16",
     "tags": [
       "傻逼"
@@ -82,7 +82,7 @@
     "id": "pankuler2",
     "title": "pankuler录屏2",
     "description": "",
-    "path": "video/https://hayonobiry4qbanf.public.blob.vercel-storage.com/%E8%A7%86%E9%A2%91/lezi/pankuler%E4%BC%A0/Video_21868113859052.mp4",
+    "path": "video/lezi/pankuler%E4%BC%A0/Video_21868113859052.mp4",
     "date": "2025-7-29",
     "tags": [
       "傻逼"
@@ -91,9 +91,9 @@
   },
   {
     "id": "智障视频",
-    "title": "智障视频",
+    "title": "百度AI生成的智障视频",
     "description": "",
-    "path": "video/https://hayonobiry4qbanf.public.blob.vercel-storage.com/%E8%A7%86%E9%A2%91/%E6%99%BA%E9%9A%9C%E8%A7%86%E9%A2%91.mp4",
+    "path": "video/百度AI生成的智障视频.mp4",
     "tags": [
       "虎",
       "老虎",
@@ -197,8 +197,8 @@
   {
     "id": "BV1RK4y127c4",
     "title": "当中华人民共和国苏维埃起来",
-    "description": "https://m.bilibili.com/video/av9316504?from=search&seid=4022490746378155748 \n在原作基础上添加歌词字幕\n（话说祖国这么社会主义本来就算是“新时代苏维埃”吧）",
-    "path": "video/https://mp-7de4d1b4-2d5c-4d5a-b612-88bad0996223.cdn.bspapp.com/%E5%89%8D%E8%B4%A6%E5%8F%B7%E8%A7%86%E9%A2%91/当中国苏维埃起来.mp4",
+    "description": "https://m.bilibili.com/video/av9316504 \n在原作基础上添加歌词字幕\n（话说祖国这么社会主义本来就算是“新时代苏维埃”吧）",
+    "path": "https://raw.githubusercontent.com/MinecraftEarthVillage/movie2/main/当中国苏维埃起来.mp4",
     "tags": [
       "历史",
       "俄罗斯",
