@@ -23,13 +23,15 @@ export default {
                     ></custom-player>
                 </div>
                 
-                <collection-list 
-                    :current-video-id="video.id" 
-                    :videos="allVideos"
-                    :wrapper-height="wrapperHeight"
-                    @play-video="playVideo"
-                    @collection-loaded="updateWrapperHeight"
-                ></collection-list>
+                <div class="collection-desktop" v-if="!isMobilePortrait">
+                    <collection-list 
+                        :current-video-id="video.id" 
+                        :videos="allVideos"
+                        :wrapper-height="wrapperHeight"
+                        @play-video="playVideo"
+                        @collection-loaded="updateWrapperHeight"
+                    ></collection-list>
+                </div>
             </div>
 
             <div class="video-details">
@@ -43,6 +45,16 @@ export default {
                         {{ tag }}
                     </span>
                 </div>
+                
+                <!-- 移动端合集栏 -->
+                <div class="collection-mobile" v-if="isMobilePortrait">
+                    <collection-list 
+                        :current-video-id="video.id" 
+                        :videos="allVideos"
+                        @play-video="playVideo"
+                    ></collection-list>
+                </div>
+                
                 <div class="video-description" v-if="video.description">
                     <h4>简介</h4>
                     <p style="white-space: pre-line;">{{ video.description }}</p>
@@ -65,6 +77,11 @@ export default {
             allVideos: [],
             wrapperHeight: 0
         };
+    },
+    computed: {
+        isMobilePortrait() {
+            return window.innerWidth < 768 && window.innerHeight > window.innerWidth;
+        }
     },
     watch: {
         // 视频切换时重新加载 giscus

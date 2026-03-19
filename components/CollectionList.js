@@ -1,34 +1,44 @@
 export default {
     template: `
-        <div class="collection-list" v-if="collection" :style="{ height: wrapperHeight + 'px' }">
-            <div class="collection-header">
-                <h3 class="collection-title">{{ collection['名'] }} ({{ currentIndex + 1 }}/{{ collection['视频列表'].length }})</h3>
-                <div class="auto-play-toggle">
-                    <span>自动连播</span>
-                    <label class="toggle-switch">
-                        <input type="checkbox" v-model="autoPlay" @change="saveAutoPlaySetting">
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
+        <div v-if="collection" class="collection-container">
+            <!-- 移动端折叠视图 -->
+            <div class="collection-mobile-header" @click="toggleExpand" v-if="isMobilePortrait">
+                <span class="collection-mobile-title">合集 · {{ collection['名'] }}</span>
+                <span class="collection-mobile-episode">{{ currentIndex + 1 }}/{{ collection['视频列表'].length }}</span>
+                <i class="fas" :class="isExpanded ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
             </div>
-            <div class="collection-description-container">
-                <button class="description-toggle" @mouseover="showDescription = true" @mouseout="onDescriptionMouseOut">
-                    <i class="fas fa-eye"></i> 简介
-                </button>
-                <div class="description-popup" v-if="showDescription" @mouseover="showDescription = true" @mouseout="onDescriptionMouseOut">
-                    <p>{{ collection['简介'] }}</p>
+            
+            <!-- 完整合集列表 -->
+            <div class="collection-list" :class="{ 'expanded': isExpanded }" :style="{ height: isMobilePortrait ? 'auto' : wrapperHeight + 'px' }">
+                <div class="collection-header">
+                    <h3 class="collection-title">{{ collection['名'] }} ({{ currentIndex + 1 }}/{{ collection['视频列表'].length }})</h3>
+                    <div class="auto-play-toggle">
+                        <span>自动连播</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" v-model="autoPlay" @change="saveAutoPlaySetting">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
                 </div>
-            </div>
-            <div class="collection-videos">
-                <div 
-                    v-for="(videoId, index) in collection['视频列表']" 
-                    :key="videoId"
-                    class="collection-video-item"
-                    :class="{ active: videoId === currentVideoId }"
-                    @click="playVideo(videoId)"
-                >
-                    <span class="video-title">{{ getVideoTitle(videoId) }}</span>
-                    <span class="video-duration">{{ getVideoDuration(videoId) }}</span>
+                <div class="collection-description-container">
+                    <button class="description-toggle" @mouseover="showDescription = true" @mouseout="onDescriptionMouseOut">
+                        <i class="fas fa-eye"></i> 简介
+                    </button>
+                    <div class="description-popup" v-if="showDescription" @mouseover="showDescription = true" @mouseout="onDescriptionMouseOut">
+                        <p>{{ collection['简介'] }}</p>
+                    </div>
+                </div>
+                <div class="collection-videos">
+                    <div 
+                        v-for="(videoId, index) in collection['视频列表']" 
+                        :key="videoId"
+                        class="collection-video-item"
+                        :class="{ active: videoId === currentVideoId }"
+                        @click="playVideo(videoId)"
+                    >
+                        <span class="video-title">{{ getVideoTitle(videoId) }}</span>
+                        <span class="video-duration">{{ getVideoDuration(videoId) }}</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -44,8 +54,14 @@ export default {
             collection: null,
             currentIndex: 0,
             autoPlay: false,
-            showDescription: false
+            showDescription: false,
+            isExpanded: false
         };
+    },
+    computed: {
+        isMobilePortrait() {
+            return window.innerWidth < 768 && window.innerHeight > window.innerWidth;
+        }
     },
     mounted() {
         this.loadCollectionData();
@@ -140,6 +156,9 @@ export default {
             if (!button.contains(event.relatedTarget) && (!popup || !popup.contains(event.relatedTarget))) {
                 this.showDescription = false;
             }
+        },
+        toggleExpand() {
+            this.isExpanded = !this.isExpanded;
         }
     }
 };
