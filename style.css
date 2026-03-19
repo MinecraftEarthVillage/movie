@@ -336,6 +336,44 @@ body {
     color: #61666d;
 }
 
+/* 分页按钮容器 */
+.page-buttons {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* 页码按钮 */
+.page-number-btn {
+    padding: 6px 10px;
+    background-color: #ffffff;
+    border: 1px solid #e7e7e7;
+    border-radius: 4px;
+    color: #61666d;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.page-number-btn:hover {
+    background-color: #f6f7f8;
+    border-color: #00a1d6;
+    color: #00a1d6;
+}
+
+.page-number-btn.active {
+    background-color: #00a1d6;
+    border-color: #00a1d6;
+    color: white;
+}
+
+/* 省略号 */
+.ellipsis {
+    font-size: 14px;
+    color: #61666d;
+    margin: 0 4px;
+}
+
 /* 无结果提示 */
 .no-results {
     text-align: center;

@@ -13,12 +13,5 @@
     { "id": "乐子", "name": "乐子", "description": "乐子档案的视频床", "icon": "fas fa-smile" },
     { "id": "政治", "name": "政治&历史", "description": "政治、历史知识相关视频内容", "icon": "fas fa-flag" },
     { "id": "电影", "name": "电影", "description": "电影相关长视频内容", "icon": "fas fa-film" }
-  ],
-
-  "features": {
-    "search": true,
-    "categories": true,
-    "pagination": true,
-    "responsive": true
-  }
+  ]
 }

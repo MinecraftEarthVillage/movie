@@ -63,6 +63,94 @@ createApp({
             return filteredVideos.value.slice(start, end);
         });
 
+        // 生成分页按钮数据
+        const pageButtons = computed(() => {
+            const buttons = [];
+            const total = totalPages.value;
+            const current = currentPage.value;
+            
+            // 如果总页数小于等于7，显示所有页码
+            if (total <= 7) {
+                for (let i = 1; i <= total; i++) {
+                    buttons.push({ type: 'page', page: i, active: i === current });
+                }
+            } else {
+                // 始终显示7个页码在省略号左侧
+                let start = Math.max(1, current - 3);
+                if (start + 6 > total) {
+                    start = Math.max(1, total - 6);
+                }
+                
+                for (let i = start; i <= start + 6; i++) {
+                    buttons.push({ type: 'page', page: i, active: i === current });
+                }
+                
+                // 添加省略号和最后一页
+                if (start + 6 < total) {
+                    buttons.push({ type: 'ellipsis' });
+                    buttons.push({ type: 'page', page: total, active: total === current, isLast: true });
+                }
+            }
+            
+            return buttons;
+        });
+
+        // 更新URL参数
+        const updateUrlParams = (page) => {
+            const url = new URL(window.location.href);
+            if (page > 1) {
+                url.searchParams.set('page', page);
+            } else {
+                url.searchParams.delete('page');
+            }
+            if (currentCategory.value.id !== 'all') {
+                url.searchParams.set('category', currentCategory.value.id);
+            } else {
+                url.searchParams.delete('category');
+            }
+            window.history.replaceState({}, '', url.toString());
+        };
+
+        // 从URL参数中获取页码
+        const getPageFromUrl = () => {
+            const url = new URL(window.location.href);
+            const pageParam = url.searchParams.get('page');
+            return pageParam ? parseInt(pageParam, 10) : 1;
+        };
+
+        // 验证并清理URL参数
+        const validateAndCleanUrlParams = () => {
+            const url = new URL(window.location.href);
+            const pageParam = url.searchParams.get('page');
+            const categoryParam = url.searchParams.get('category');
+            let hasInvalidParams = false;
+            
+            // 验证page参数
+            if (pageParam) {
+                const page = parseInt(pageParam, 10);
+                if (isNaN(page) || page < 1 || page > totalPages.value) {
+                    url.searchParams.delete('page');
+                    hasInvalidParams = true;
+                    currentPage.value = 1;
+                }
+            }
+            
+            // 验证category参数
+            if (categoryParam) {
+                const categoryExists = categories.value.some(cat => cat.id === categoryParam);
+                if (!categoryExists) {
+                    url.searchParams.delete('category');
+                    hasInvalidParams = true;
+                    currentPage.value = 1;
+                }
+            }
+            
+            // 如果有无效参数，更新URL
+            if (hasInvalidParams) {
+                window.history.replaceState({}, '', url.toString());
+            }
+        };
+
         // ------- 数据加载-------
 
         const loadVideos = async () => {// 加载视频数据
@@ -105,15 +193,18 @@ createApp({
         const changeCategory = (category) => {
             currentCategory.value = category;
             currentPage.value = 1;
+            updateUrlParams(1);
             scrollToTop();
         };
         const performSearch = () => {
             currentPage.value = 1;
+            updateUrlParams(1);
         };
 
         const clearSearch = () => {
             searchQuery.value = '';
             currentPage.value = 1;
+            updateUrlParams(1);
         };
         const scrollToTop = () => {
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -126,6 +217,7 @@ createApp({
         const nextPage = () => {
             if (currentPage.value < totalPages.value) {
                 currentPage.value++;
+                updateUrlParams(currentPage.value);
                 scrollToTop();
             }
         };
@@ -133,14 +225,47 @@ createApp({
         const prevPage = () => {
             if (currentPage.value > 1) {
                 currentPage.value--;
+                updateUrlParams(currentPage.value);
+                scrollToTop();
+            }
+        };
+
+        // 跳转到指定页码
+        const goToPage = (page) => {
+            if (page >= 1 && page <= totalPages.value) {
+                currentPage.value = page;
+                updateUrlParams(page);
                 scrollToTop();
             }
         };
 
         // ------- 生命周期 -------
+        // 从URL参数中获取分区
+        const getCategoryFromUrl = () => {
+            const url = new URL(window.location.href);
+            return url.searchParams.get('category');
+        };
+
         onMounted(async () => {
             await Promise.all([loadCategories(), loadVideos()]);
 
+            // 从URL获取分区
+            const initialCategory = getCategoryFromUrl();
+            if (initialCategory) {
+                const foundCategory = categories.value.find(cat => cat.id === initialCategory);
+                if (foundCategory) {
+                    currentCategory.value = foundCategory;
+                }
+            }
+
+            // 从URL获取页码
+            const initialPage = getPageFromUrl();
+            if (initialPage > 1) {
+                currentPage.value = initialPage;
+            }
+
+            // 验证并清理URL参数
+            validateAndCleanUrlParams();
 
             // 👇 新增：检查是否有从视频页跳转过来的待搜索标签
             const pendingTag = sessionStorage.getItem('pendingSearch');
@@ -176,6 +301,7 @@ createApp({
             filteredVideos,
             totalPages,
             paginatedVideos,
+            pageButtons,
             handleUpload,
 
             // 原有方法
@@ -186,7 +312,7 @@ createApp({
             scrollToTop,
             nextPage,
             prevPage,
-
+            goToPage
 
             
         };
