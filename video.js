@@ -72,10 +72,27 @@ createApp({
             if (timeoutId) clearTimeout(timeoutId);
         });
 
+        // 处理视频切换
+        const handlePlayVideo = async (videoId) => {
+            try {
+                const response = await fetch('./data/video-data.json');
+                if (!response.ok) throw new Error('Failed to load videos');
+                const videos = await response.json();
+                const found = videos.find(v => String(v.id) === String(videoId));
+                if (found) {
+                    video.value = found;
+                    setTitle(found.title);
+                }
+            } catch (err) {
+                console.error('加载视频数据失败:', err);
+            }
+        };
+
         return {
             video,
             isLoading,
-            error
+            error,
+            handlePlayVideo
         };
     },
     template: `
@@ -91,7 +108,7 @@ createApp({
             <p>3秒后为您自动跳转至首页</p>
         </div>
         <div v-else>
-            <video-page :video="video" @back="goHome" @search-tag="searchByTag"></video-page>
+            <video-page :video="video" @back="goHome" @search-tag="searchByTag" @play-video="handlePlayVideo"></video-page>
         </div>
     `,
     methods: {

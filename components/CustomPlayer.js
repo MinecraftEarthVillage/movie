@@ -113,7 +113,7 @@ export default {
         poster: { type: String, default: '' },
         videoId: { type: [String, Number], required: true }
     },
-    emits: ['loaded', 'error'],
+    emits: ['loaded', 'error', 'ended'],
     data() {
         return {
             playing: false,
@@ -236,6 +236,7 @@ export default {
         },
         onEnded() {
             this.playing = false;
+            this.$emit('ended');
         },
         startSeek(e) {
             const rect = this.$refs.progressBar.getBoundingClientRect();

@@ -1,22 +1,34 @@
 import CustomPlayer from './CustomPlayer.js';
+import CollectionList from './CollectionList.js';
 export default {
-    components: { CustomPlayer },
+    components: { CustomPlayer, CollectionList },
     template: `
         <div class="video-page">
             <button class="back-home-btn" @click="goBack">
                 <i class="fas fa-arrow-left"></i> 返回首页
             </button>
 
-            <div class="video-player-container">
-                <!-- 自定义防右键盗视频播放器 -->
-                <custom-player 
-                    :src="currentSrc"
-                    :poster="thumbnail"
-                    :video-id="video.id"
-                    ref="videoPlayer"
-                    @loaded="onVideoLoaded"
-                    @error="handleVideoError"
-                ></custom-player>
+            <div class="video-content-wrapper">
+                <div class="video-player-container">
+                    <!-- 自定义防右键盗视频播放器 -->
+                    <custom-player 
+                        :src="currentSrc"
+                        :poster="thumbnail"
+                        :video-id="video.id"
+                        ref="videoPlayer"
+                        @loaded="onVideoLoaded"
+                        @error="handleVideoError"
+                        @ended="handleVideoEnded"
+                    ></custom-player>
+                </div>
+                
+                <collection-list 
+                    :current-video-id="video.id" 
+                    :videos="allVideos"
+                    :wrapper-height="wrapperHeight"
+                    @play-video="playVideo"
+                    @collection-loaded="updateWrapperHeight"
+                ></collection-list>
             </div>
 
             <div class="video-details">
@@ -43,12 +55,14 @@ export default {
     props: {
         video: { type: Object, required: true }
     },
-    emits: ['back', 'search-tag'],
+    emits: ['back', 'search-tag', 'play-video'],
     data() {
         return {
             videoDuration: null,
             thumbnail: this.video.thumbnail || '',
             currentSrc: this.video.path,
+            allVideos: [],
+            wrapperHeight: 0
         };
     },
     watch: {
@@ -59,14 +73,31 @@ export default {
                 this.thumbnail = newVal.thumbnail || '';
                 this.$nextTick(() => {
                     this.loadGiscus();
+                    // 视频切换后更新高度
+                    this.updateWrapperHeight();
                 });
             },
             immediate: true
         }
     },
     mounted() {
+        // 从本地缓存加载视频时长，避免重复计算
         this.loadCachedDuration();
+        
+        // 加载所有视频数据，用于合集列表显示
+        this.loadAllVideos();
+        
+        // 确保页面可以正常滚动（防止其他页面设置的隐藏滚动条影响）
         document.body.style.overflow = 'auto';
+        
+        // 初始化时计算视频容器高度，用于设置合集列表高度
+        this.updateWrapperHeight();
+        
+        // 监听窗口大小变化，动态调整合集列表高度以保持与视频播放器对齐
+        window.addEventListener('resize', this.updateWrapperHeight);
+    },
+    beforeUnmount() {
+        window.removeEventListener('resize', this.updateWrapperHeight);
     },
     methods: {
         // ===== 新增：加载 giscus 评论区 =====
@@ -98,6 +129,8 @@ export default {
         onVideoLoaded({ duration }) {
             this.videoDuration = duration;
             this.cacheVideoDuration();
+            // 视频加载后更新高度
+            this.updateWrapperHeight();
         },
         handleVideoError(e) {
             // 只要出错，并且当前没有使用代理，就显示代理按钮
@@ -160,6 +193,58 @@ export default {
         },
         searchTag(tag) {
             this.$emit('search-tag', tag);
+        },
+        updateWrapperHeight() {
+            // 查找视频元素
+            const videoElement = document.querySelector('video');
+            if (videoElement && videoElement.offsetHeight > 0) {
+                this.wrapperHeight = videoElement.offsetHeight;
+            } else {
+                // 备用方案：使用视频播放器容器的高度
+                const videoContainer = document.querySelector('.video-player-container');
+                if (videoContainer && videoContainer.offsetHeight > 0) {
+                    this.wrapperHeight = videoContainer.offsetHeight;
+                } else {
+                    // 最终备用：使用固定高度
+                    this.wrapperHeight = 480;
+                }
+            }
+        },
+        async loadAllVideos() {
+            try {
+                const response = await fetch('./data/video-data.json');
+                if (!response.ok) throw new Error('Failed to load videos');
+                const videos = await response.json();
+                this.allVideos = videos;
+            } catch (err) {
+                console.error('加载视频数据失败:', err);
+            }
+        },
+        playVideo(videoId) {
+            this.$emit('play-video', videoId);
+        },
+        async handleVideoEnded() {
+            try {
+                const autoPlay = localStorage.getItem('collectionAutoPlay') === 'true';
+                if (!autoPlay) return;
+                
+                const response = await fetch('./data/合集.json');
+                if (!response.ok) throw new Error('Failed to load collection data');
+                const data = await response.json();
+                
+                // 查找包含当前视频ID的合集
+                for (const coll of data['合集']) {
+                    const index = coll['视频列表'].indexOf(this.video.id);
+                    if (index !== -1 && index < coll['视频列表'].length - 1) {
+                        // 播放下一个视频
+                        const nextVideoId = coll['视频列表'][index + 1];
+                        this.playVideo(nextVideoId);
+                        break;
+                    }
+                }
+            } catch (err) {
+                console.error('自动连播失败:', err);
+            }
         }
     }
 };

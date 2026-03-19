@@ -520,7 +520,7 @@
     "id": "狮子王3",
     "title": "狮子王3：Hakuna Matata",
     "description": "该片是《狮子王》的外传作品，从配角丁满（Timon）与彭彭（Pumbaa）的视角重述《狮子王》的故事。 [3-4] [6] [12]影片的叙事始于《狮子王》事件之前，并在后半部分与原作时间线合并，从不同角度展现经典场景。 [7]其创作灵感源于汤姆·斯托帕德（Tom Stoppard）的剧作《Rosencrantz & Guildenstern Are Dead》。 \n\n在距离荣耀石（Pride Rock）很远的地方，是狐獴丁满（Timon）的家乡。丁满被指派为挖掘工以及守卫，但是丁满什么事情都办不好，在差点让自己的亲戚被土狼桑琪（Shenzi）、阿德（Ed）、和班仔（Banzai）吃掉的情况下，他决定离开家乡，去为自己找一个归属之地。于是在狒狒拉飞奇（Rafiki）的鼓励下，丁满就往荣耀石前进了。在旅途上，丁满遇见了疣猪彭彭（Pumbaa），并决定一同寻找一块安身之地。",
-    "path": "https://raw.githubusercontent.com/MinecraftEarthVillage/LionKing/master/狮子王3：Hakuna Matata/狮子王3：Hakuna Matata.m3u8",
+    "path": "https://raw.githubusercontent.com/MinecraftEarthVillage/LionKing/master/狮子王3/mixed.m3u8",
     "tags": [
       "迪士尼",
       "狮子王",
@@ -554,7 +554,7 @@
     "date": "2023-01-08 12:12:38"
   },
   {
-    "id": "棍母",
+    "id": "null",
     "title": "棍母",
     "description": "不存在的视频",
     "path": "video/",
