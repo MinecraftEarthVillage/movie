@@ -161,6 +161,12 @@ export default {
                     this.cleanupVideo(video);
                     resolve(duration);
                 };
+                
+                video.onerror = () => {
+                    clearTimeout(timeout);
+                    this.cleanupVideo(video);
+                    resolve(null);
+                };
             });
         },
         async loadAllDurations() {
