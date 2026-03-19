@@ -98,12 +98,51 @@ export default {
                         this.currentIndex = index;
                         // 合集数据加载完成后触发事件
                         this.$emit('collection-loaded');
+                        
+                        // 加载合集里所有视频的时长
+                        this.preloadVideoDurations(coll['视频列表']);
                         break;
                     }
                 }
             } catch (err) {
                 console.error('加载合集数据失败:', err);
             }
+        },
+        preloadVideoDurations(videoIds) {
+            videoIds.forEach(videoId => {
+                // 检查是否已经有缓存的时长
+                const key = `video_${videoId}`;
+                const cached = localStorage.getItem(key);
+                if (!cached) {
+                    // 查找视频对象
+                    const video = this.videos.find(v => String(v.id) === String(videoId));
+                    if (video && video.path) {
+                        // 创建隐藏的video元素来获取时长
+                        const videoElement = document.createElement('video');
+                        videoElement.src = video.path;
+                        videoElement.preload = 'metadata';
+                        
+                        videoElement.addEventListener('loadedmetadata', () => {
+                            if (videoElement.duration) {
+                                // 缓存时长到localStorage
+                                localStorage.setItem(key, JSON.stringify({
+                                    duration: videoElement.duration,
+                                    lastUpdated: Date.now()
+                                }));
+                                // 触发更新，重新渲染时长
+                                this.$forceUpdate();
+                            }
+                            // 清理
+                            videoElement.remove();
+                        });
+                        
+                        videoElement.addEventListener('error', () => {
+                            // 出错时清理
+                            videoElement.remove();
+                        });
+                    }
+                }
+            });
         },
         loadAutoPlaySetting() {
             try {
