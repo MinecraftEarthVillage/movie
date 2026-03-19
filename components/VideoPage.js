@@ -40,6 +40,13 @@ export default {
                     <span v-if="video.date"><i class="far fa-calendar"></i> {{ formatDate(video.date) }}</span>
                     <span v-if="videoDuration"><i class="far fa-clock"></i> {{ formatDuration(videoDuration) }}</span>
                 </div>
+
+                <div class="video-description" v-if="video.description">
+                    <h4>简介</h4>
+                    <p style="white-space: pre-line;">{{ video.description }}</p>
+                </div>
+
+                <!-- 标签 -->
                 <div class="video-tags" v-if="video.tags && video.tags.length">
                     <span v-for="tag in video.tags" :key="tag" class="tag" @click="searchTag(tag)">
                         {{ tag }}
@@ -55,13 +62,10 @@ export default {
                     ></collection-list>
                 </div>
                 
-                <div class="video-description" v-if="video.description">
-                    <h4>简介</h4>
-                    <p style="white-space: pre-line;">{{ video.description }}</p>
-                </div>
+
             </div>
 
-            <!-- ===== 新增：giscus 评论区容器 ===== -->
+            <!-- ===== giscus 评论区容器 ===== -->
             <div class="giscus-container" ref="giscusContainer"></div>
         </div>
     `,

@@ -7,7 +7,7 @@
 
 body {
     font-family: 'Noto Sans SC', sans-serif;
-    background-color: #f4f5f7;
+    background-color: #ffffff;
     color: #18191c;
     line-height: 1.6;
 }
@@ -390,7 +390,7 @@ body {
 }
 
 .tag {
-    background-color: #f6f7f8;
+    background-color: #F1F2F3;
     color: #61666d;
     padding: 4px 10px;
     border-radius: 4px;
