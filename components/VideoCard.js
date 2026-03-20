@@ -1,3 +1,24 @@
+/**
+ * VideoCard 组件
+ * 功能用途：视频卡片，显示视频缩略图、标题、时长和日期等信息
+ * 
+ * 核心逻辑：
+ * 1. 显示视频缩略图（优先使用视频自带缩略图，其次使用缓存的缩略图，最后生成缩略图或使用默认缩略图）
+ * 2. 显示视频标题和日期
+ * 3. 显示视频时长
+ * 4. 点击卡片跳转到视频详情页
+ * 
+ * 关键参数：
+ * - video: 视频对象（必需），包含 id、title、path、date、thumbnail 等属性
+ * 
+ * 使用场景示例：
+ * <VideoCard :video="video" />
+ * 
+ * 重要注意事项：
+ * 1. 组件会尝试从视频中生成缩略图，最多尝试3次
+ * 2. 缩略图和视频时长会缓存到localStorage，缓存有效期为7天
+ * 3. 如果无法生成缩略图，会使用基于视频标题的默认SVG缩略图
+ */
 // components/VideoCard.js
 export default {
     template: `
@@ -21,29 +42,53 @@ export default {
         </div>
     `,
     props: {
+        /**
+         * 视频对象
+         * @type {Object}
+         * @required
+         * @property {string|number} id - 视频ID
+         * @property {string} title - 视频标题
+         * @property {string} path - 视频路径
+         * @property {string} [date] - 视频日期
+         * @property {string} [thumbnail] - 视频缩略图
+         */
         video: { type: Object, required: true }
     },
     data() {
         return {
+            // 视频时长（秒）
             duration: null,
+            // 视频缩略图
             thumbnail: null,
+            // 缩略图加载状态
             thumbnailLoading: false,
+            // 生成缩略图的尝试次数
             captureAttempts: 0,
+            // 最大尝试次数
             maxCaptureAttempts: 3
         };
     },
     mounted() {
+        // 加载缓存的视频信息
         this.loadCachedVideoInfo();
+        // 初始化缩略图
         this.initializeThumbnail();
     },
     methods: {
-        // 直接跳转（刷新页面，实现独立URL）
+        /**
+         * 跳转到视频详情页
+         * 打开新窗口，使用独立的视频页面 URL
+         */
         goToVideoPage() {
             window.open(`video.html?video=${this.video.id}`, '_blank');
         },
 
-        // ========== 多行文本安全格式化（供详情组件使用） ==========
-        // 将换行符转为 <br>，并转义 HTML 特殊字符，防止 XSS
+        /**
+         * 多行文本安全格式化（供详情组件使用）
+         * 将换行符转为 <br>，并转义 HTML 特殊字符，防止 XSS
+         * @param {string} text - 原始文本
+         * @returns {string} 格式化后的文本
+         */
         formatMultilineText(text) {
             if (!text) return '';
             // 转义 HTML 字符用于防止XSS 但目前是纯前端网站，并非任何人可以直接上传，一切都在我的掌控之中，暂时不使用
@@ -60,7 +105,10 @@ export default {
             return escaped.replace(/\r?\n/g, '<br>');
         },
 
-        // ---------- 缩略图生成逻辑----------
+        /**
+         * 初始化缩略图
+         * 优先级：视频自带缩略图 > 缓存的缩略图 > 从视频生成 > 默认缩略图
+         */
         initializeThumbnail() {
             if (this.video.thumbnail) {
                 this.thumbnail = this.video.thumbnail;
@@ -77,6 +125,10 @@ export default {
                 this.useDefaultThumbnail();
             }
         },
+        /**
+         * 获取缓存的缩略图
+         * @returns {string|null} 缓存的缩略图数据URL或null
+         */
         getCachedThumbnail() {
             try {
                 const key = `video_${this.video.id || this.video.path}`;
@@ -90,6 +142,9 @@ export default {
             } catch (e) { }
             return null;
         },
+        /**
+         * 从视频生成缩略图
+         */
         async generateThumbnailFromVideo() {
             if (this.captureAttempts >= this.maxCaptureAttempts) {
                 this.useDefaultThumbnail();
@@ -112,6 +167,10 @@ export default {
                 this.thumbnailLoading = false;
             }
         },
+        /**
+         * 捕获视频帧作为缩略图
+         * @returns {Promise<string>} 缩略图数据URL
+         */
         captureVideoFrame() {
             return new Promise((resolve, reject) => {
                 const video = document.createElement('video');
@@ -171,6 +230,9 @@ export default {
                 video.src = this.video.path;
             });
         },
+        /**
+         * 加载缓存的视频信息
+         */
         loadCachedVideoInfo() {
             try {
                 const key = `video_${this.video.id || this.video.path}`;
@@ -183,6 +245,10 @@ export default {
                 }
             } catch (e) { }
         },
+        /**
+         * 缓存视频信息
+         * @param {Object} info - 要缓存的信息
+         */
         cacheVideoInfo(info) {
             try {
                 const key = `video_${this.video.id || this.video.path}`;
@@ -191,6 +257,10 @@ export default {
                 localStorage.setItem(key, JSON.stringify(cached));
             } catch (e) { }
         },
+        /**
+         * 使用默认缩略图
+         * 生成基于视频标题的SVG缩略图
+         */
         useDefaultThumbnail() {
             if (this.thumbnail) return;
             const colors = ['#00a1d6', '#f25d8e', '#fb7299', '#ff9800', '#4caf50', '#2196f3', '#9c27b0'];
@@ -199,6 +269,9 @@ export default {
             const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="180"><rect width="100%" height="100%" fill="${color}"/><text x="50%" y="50%" font-family="Arial" font-size="16" fill="white" text-anchor="middle" dy=".3em">${text}</text><path d="M120 80 L200 120 L120 160 Z" fill="white" opacity="0.8"/></svg>`;
             this.thumbnail = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
         },
+        /**
+         * 处理图片加载错误
+         */
         handleImageError() {
             if (this.captureAttempts < this.maxCaptureAttempts) {
                 this.generateThumbnailFromVideo();
@@ -207,6 +280,11 @@ export default {
                 this.thumbnailLoading = false;
             }
         },
+        /**
+         * 格式化视频时长
+         * @param {number} seconds - 秒数
+         * @returns {string} 格式化的时长字符串
+         */
         formatDuration(seconds) {
             if (!seconds) return '00:00';
             const h = Math.floor(seconds / 3600);
@@ -214,6 +292,11 @@ export default {
             const s = Math.floor(seconds % 60);
             return h ? `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}` : `${m}:${s.toString().padStart(2, '0')}`;
         },
+        /**
+         * 格式化日期
+         * @param {string} dateString - 日期字符串
+         * @returns {string} 格式化的日期字符串
+         */
         formatDate(dateString) {
             if (!dateString) return '';
             const date = new Date(dateString);

@@ -1,3 +1,36 @@
+/**
+ * VideoPage 组件
+ * 功能用途：视频详情页面，显示视频播放器、合集列表、视频详情和评论区
+ * 
+ * 核心逻辑：
+ * 1. 显示视频播放器，支持播放控制、进度调节等功能
+ * 2. 显示视频合集列表，支持切换视频
+ * 3. 显示视频详情，包括标题、日期、时长、简介和标签
+ * 4. 集成 giscus 评论区
+ * 5. 支持自动连播功能
+ * 
+ * 关键参数：
+ * - video: 视频对象（必需），包含 id、title、path、date、description、tags、thumbnail 等属性
+ * 
+ * 事件：
+ * - back: 点击返回按钮时触发
+ * - search-tag: 点击标签时触发，传递标签内容
+ * - play-video: 播放视频时触发，传递视频ID
+ * 
+ * 使用场景示例：
+ * <VideoPage 
+ *   :video="currentVideo"
+ *   @back="handleBack"
+ *   @search-tag="handleSearchTag"
+ *   @play-video="handlePlayVideo"
+ * />
+ * 
+ * 重要注意事项：
+ * 1. 组件会从 localStorage 缓存视频时长，避免重复计算
+ * 2. 支持响应式布局，在移动端和桌面端显示不同的合集列表布局
+ * 3. 视频播放结束时，若开启自动连播，会自动播放合集中的下一个视频
+ * 4. 集成了 giscus 评论区，每个视频有独立的评论线程
+ */
 import CustomPlayer from './CustomPlayer.js';
 import CollectionList from './CollectionList.js';
 export default {
@@ -70,25 +103,52 @@ export default {
         </div>
     `,
     props: {
+        /**
+         * 视频对象
+         * @type {Object}
+         * @required
+         * @property {string|number} id - 视频ID
+         * @property {string} title - 视频标题
+         * @property {string} path - 视频路径
+         * @property {string} [date] - 视频日期
+         * @property {string} [description] - 视频简介
+         * @property {string[]} [tags] - 视频标签
+         * @property {string} [thumbnail] - 视频缩略图
+         */
         video: { type: Object, required: true }
     },
+    /**
+     * 事件
+     */
     emits: ['back', 'search-tag', 'play-video'],
     data() {
         return {
+            // 视频时长（秒）
             videoDuration: null,
+            // 视频缩略图
             thumbnail: this.video.thumbnail || '',
+            // 当前视频源地址
             currentSrc: this.video.path,
+            // 所有视频数据（用于合集列表）
             allVideos: [],
+            // 合集列表容器高度
             wrapperHeight: 0
         };
     },
     computed: {
+        /**
+         * 判断是否为移动端竖屏视图
+         * @returns {boolean} 是否为移动端竖屏
+         */
         isMobilePortrait() {
             return window.innerWidth < 768 && window.innerHeight > window.innerWidth;
         }
     },
     watch: {
-        // 视频切换时重新加载 giscus
+        /**
+         * 监听视频变化
+         * 当视频切换时，更新视频源、缩略图，并重新加载评论区
+         */
         video: {
             handler(newVal) {
                 this.currentSrc = newVal.path;            // 尝试修复edge手机端的关键更新
@@ -119,10 +179,13 @@ export default {
         window.addEventListener('resize', this.updateWrapperHeight);
     },
     beforeUnmount() {
+        // 移除窗口大小变化监听器
         window.removeEventListener('resize', this.updateWrapperHeight);
     },
     methods: {
-        // ===== 新增：加载 giscus 评论区 =====
+        /**
+         * 加载 giscus 评论区
+         */
         loadGiscus() {
             const container = this.$refs.giscusContainer;
             if (!container) return;
@@ -148,6 +211,11 @@ export default {
 
             container.appendChild(script);
         },
+        /**
+         * 视频加载完成时
+         * @param {Object} data - 视频加载数据
+         * @param {number} data.duration - 视频时长
+         */
         onVideoLoaded({ duration }) {
             this.videoDuration = duration;
             this.cacheVideoDuration();
@@ -156,10 +224,17 @@ export default {
                 this.updateWrapperHeight();
             });
         },
+        /**
+         * 处理视频错误
+         * @param {Event} e - 事件对象
+         */
         handleVideoError(e) {
             // 只要出错，并且当前没有使用代理，就显示代理按钮
             console.warn('视频加载失败:', e.target.error);
         },
+        /**
+         * 加载缓存的视频时长
+         */
         loadCachedDuration() {
             try {
                 const key = `video_${this.video.id || this.video.path}`;
@@ -170,6 +245,9 @@ export default {
                 }
             } catch (e) { }
         },
+        /**
+         * 缓存视频时长
+         */
         cacheVideoDuration() {
             if (!this.videoDuration) return;
             try {
@@ -180,6 +258,11 @@ export default {
                 localStorage.setItem(key, JSON.stringify(cached));
             } catch (e) { }
         },
+        /**
+         * 格式化视频时长
+         * @param {number} seconds - 秒数
+         * @returns {string} 格式化的时长字符串
+         */
         formatDuration(seconds) {
             if (!seconds) return '00:00';
             const h = Math.floor(seconds / 3600);
@@ -188,6 +271,11 @@ export default {
             return h ? `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
                 : `${m}:${s.toString().padStart(2, '0')}`;
         },
+        /**
+         * 格式化日期
+         * @param {string} dateString - 日期字符串
+         * @returns {string} 格式化的日期字符串
+         */
         formatDate(dateString) {
             if (!dateString) return '';
             const date = new Date(dateString);
@@ -212,12 +300,23 @@ export default {
                 return `${year}年${month}月${day}日 ${time}`;
             }
         },
+        /**
+         * 返回首页
+         */
         goBack() {
             this.$emit('back');
         },
+        /**
+         * 搜索标签
+         * @param {string} tag - 标签内容
+         */
         searchTag(tag) {
             this.$emit('search-tag', tag);
         },
+        /**
+         * 更新合集列表容器高度
+         * 使合集列表高度与视频播放器高度保持一致
+         */
         updateWrapperHeight() {
             // 查找视频元素
             const videoElement = document.querySelector('video');
@@ -234,6 +333,9 @@ export default {
                 }
             }
         },
+        /**
+         * 加载所有视频数据
+         */
         async loadAllVideos() {
             try {
                 const response = await fetch('./data/video-data.json');
@@ -244,9 +346,17 @@ export default {
                 console.error('加载视频数据失败:', err);
             }
         },
+        /**
+         * 播放视频
+         * @param {string|number} videoId - 视频ID
+         */
         playVideo(videoId) {
             this.$emit('play-video', videoId);
         },
+        /**
+         * 处理视频播放结束
+         * 如果开启自动连播，播放合集中的下一个视频
+         */
         async handleVideoEnded() {
             try {
                 const autoPlay = localStorage.getItem('collectionAutoPlay') === 'true';

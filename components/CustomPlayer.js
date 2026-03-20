@@ -1,3 +1,46 @@
+/**
+ * CustomPlayer 组件
+ * 功能用途：自定义视频播放器，支持播放控制、进度调节、音量控制、倍速播放、全屏等功能
+ * 
+ * 核心逻辑：
+ * 1. 视频播放控制（播放/暂停、进度调节）
+ * 2. 音量控制和静音功能
+ * 3. 倍速播放设置
+ * 4. 全屏切换
+ * 5. 跨域视频代理播放
+ * 6. 实时缓冲状态和网速显示
+ * 7. 键盘和触摸事件处理
+ * 8. 控件自动隐藏/显示
+ * 
+ * 关键参数：
+ * - src: 视频源地址（必需）
+ * - poster: 视频封面图片（可选，默认为空）
+ * - videoId: 视频ID（必需，用于缓存视频信息）
+ * 
+ * 事件：
+ * - loaded: 视频加载完成时触发，传递视频时长
+ * - error: 视频加载错误时触发，传递错误对象
+ * - ended: 视频播放结束时触发
+ * - resize: 视频尺寸变化时触发
+ * 
+ * 使用场景示例：
+ * <CustomPlayer 
+ *   :src="videoUrl" 
+ *   :poster="videoPoster"
+ *   :videoId="videoId"
+ *   @loaded="handleVideoLoaded"
+ *   @error="handleVideoError"
+ *   @ended="handleVideoEnded"
+ *   @resize="handleVideoResize"
+ * />
+ * 
+ * 重要注意事项：
+ * 1. 支持键盘控制：空格键播放/暂停，左右箭头快进/后退
+ * 2. 支持触摸长按进入3倍速播放模式
+ * 3. 当遇到跨域问题时，会自动尝试使用代理播放
+ * 4. 视频进度和时长会缓存到localStorage，下次播放时恢复
+ * 5. 控件会在3秒无操作后自动隐藏
+ */
 // components/CustomPlayer.js
 export default {
     template: `
@@ -19,7 +62,7 @@ export default {
                 <video
                     ref="video"
                     :src="currentSrc"
-                :poster="poster"
+                    :poster="poster"
                     @loadedmetadata="onLoadedMetadata"
                     @timeupdate="onTimeUpdate"
                     @ended="onEnded"
@@ -109,20 +152,46 @@ export default {
         </div>
     `,
     props: {
+        /**
+         * 视频源地址
+         * @type {String}
+         * @required
+         */
         src: { type: String, required: true },
+        /**
+         * 视频封面图片
+         * @type {String}
+         * @default ''
+         */
         poster: { type: String, default: '' },
+        /**
+         * 视频ID，用于缓存视频信息
+         * @type {[String, Number]}
+         * @required
+         */
         videoId: { type: [String, Number], required: true }
     },
+    /**
+     * 事件
+     */
     emits: ['loaded', 'error', 'ended', 'resize'],
     data() {
         return {
+            // 播放状态
             playing: false,
+            // 当前播放时间（秒）
             currentTime: 0,
+            // 视频总时长（秒）
             duration: 0,
+            // 保存的播放进度（用于恢复）
             savedTime: 0,
+            // 播放进度百分比
             playedPercentage: 0,
+            // 音量（0-1）
             volume: 1,
+            // 是否静音
             muted: false,
+            // 播放倍速
             playbackRate: 1,
             // 代理相关
             currentSrc: this.src,
@@ -144,6 +213,9 @@ export default {
             originalPlaybackRate: 1,  // 用于恢复长按前的倍速
             leftPressed: false,
             rightPressed: false,
+            // 触摸长按相关
+            touchLongPressTimer: null,
+            isTouchLongPressing: false,
             // 缓冲与网速
             buffering: true,// 是否显示缓冲层
             downloadSpeed: null,// 实时网速 (KB/s)
@@ -157,18 +229,21 @@ export default {
         };
     },
     mounted() {
+        // 加载缓存的视频时长和进度
         this.loadCachedDuration();
-        // 禁用默认右键（已通过 @contextmenu.prevent 实现）
         // 使 div 可聚焦
         this.$el.focus();
-        this.fetchVideoSize(this.currentSrc); // 尝试获取视频大小
+        // 尝试获取视频大小
+        this.fetchVideoSize(this.currentSrc);
 
         // 控件自动隐藏逻辑
         const wrapper = this.$refs.videoWrapper;
         wrapper.addEventListener('mousemove', this.onUserActivity);
         wrapper.addEventListener('touchmove', this.onUserActivity);
         wrapper.addEventListener('mousedown', this.onUserActivity);
-        wrapper.addEventListener('touchstart', this.onUserActivity);
+        wrapper.addEventListener('touchstart', this.onTouchStart);
+        wrapper.addEventListener('touchend', this.onTouchEnd);
+        wrapper.addEventListener('touchcancel', this.onTouchEnd);
         wrapper.addEventListener('mouseenter', this.onMouseEnter);
         wrapper.addEventListener('mouseleave', this.onMouseLeave);
 
@@ -176,17 +251,22 @@ export default {
         this.observeVideoResize();
     },
     beforeUnmount() {
+        // 组件卸载前清理
         this.pauseVideo();
         this.clearAllLongPress();
         this.clearHideTimer();
         if (this.leaveTimer) clearTimeout(this.leaveTimer);
+        if (this.touchLongPressTimer) clearTimeout(this.touchLongPressTimer);
 
+        // 移除事件监听器
         const wrapper = this.$refs.videoWrapper;
         if (wrapper) {
             wrapper.removeEventListener('mousemove', this.onUserActivity);
             wrapper.removeEventListener('touchmove', this.onUserActivity);
             wrapper.removeEventListener('mousedown', this.onUserActivity);
-            wrapper.removeEventListener('touchstart', this.onUserActivity);
+            wrapper.removeEventListener('touchstart', this.onTouchStart);
+            wrapper.removeEventListener('touchend', this.onTouchEnd);
+            wrapper.removeEventListener('touchcancel', this.onTouchEnd);
             wrapper.removeEventListener('mouseenter', this.onMouseEnter);
             wrapper.removeEventListener('mouseleave', this.onMouseLeave);
         }
@@ -197,6 +277,9 @@ export default {
         }
     },
     methods: {
+        /**
+         * 切换播放/暂停状态
+         */
         togglePlay() {
             const video = this.$refs.video;
             if (video.paused) {
@@ -205,18 +288,29 @@ export default {
                 video.pause();
             }
         },
+        /**
+         * 暂停视频
+         */
         pauseVideo() {
             this.$refs.video?.pause();
         },
-        //视频开始播放时
+        /**
+         * 视频开始播放时
+         */
         onPlay() {
             this.playing = true;
         },
 
-        //视频暂停时
+        /**
+         * 视频暂停时
+         */
         onPause() {
             this.playing = false;
         },
+        /**
+         * 视频元数据加载完成时
+         * @param {Event} e - 事件对象
+         */
         onLoadedMetadata(e) {
             const video = e.target;
             this._tryGetDuration(video);   // 尝试获取并更新 duration
@@ -226,6 +320,11 @@ export default {
                 this.currentTime = this.savedTime;
             }
         },
+        /**
+         * 尝试获取视频时长
+         * @param {HTMLVideoElement} video - 视频元素
+         * @param {number} maxAttempts - 最大尝试次数
+         */
         _tryGetDuration(video, maxAttempts = 10) {
             const check = (attempt = 0) => {
                 if (video.duration && !isNaN(video.duration) && video.duration !== Infinity) {
@@ -240,6 +339,10 @@ export default {
             };
             check();
         },
+        /**
+         * 视频播放时间更新时
+         * @param {Event} e - 事件对象
+         */
         onTimeUpdate(e) {
             const video = e.target;
             this.currentTime = video.currentTime;
@@ -251,10 +354,17 @@ export default {
                 }
             }
         },
+        /**
+         * 视频播放结束时
+         */
         onEnded() {
             this.playing = false;
             this.$emit('ended');
         },
+        /**
+         * 开始拖动进度条
+         * @param {MouseEvent} e - 鼠标事件
+         */
         startSeek(e) {
             const rect = this.$refs.progressBar.getBoundingClientRect();
             const percent = (e.clientX - rect.left) / rect.width;
@@ -273,10 +383,16 @@ export default {
             document.addEventListener('mousemove', onMouseMove);
             document.addEventListener('mouseup', onMouseUp);
         },
+        /**
+         * 改变音量
+         */
         changeVolume() {
             this.$refs.video.volume = this.volume;
             this.muted = this.volume === 0;
         },
+        /**
+         * 切换静音状态
+         */
         toggleMute() {
             this.muted = !this.muted;
             this.$refs.video.muted = this.muted;
@@ -285,14 +401,19 @@ export default {
                 this.$refs.video.volume = 0.5;
             }
         },
+        /**
+         * 改变播放倍速
+         */
         changePlaybackRate() {
             if (this.isRightLongPressing) {
                 // 长按期间不应用用户选择的倍速，但保留值以便恢复
-                // 可静默忽略或提示，这里忽略
                 return;
             }
             this.$refs.video.playbackRate = this.playbackRate;
         },
+        /**
+         * 切换全屏
+         */
         toggleFullscreen() {
             const container = this.$el;
             if (document.fullscreenElement) {
@@ -301,20 +422,33 @@ export default {
                 container.requestFullscreen();
             }
         },
-        // 缓冲事件处理
+        /**
+         * 视频缓冲时
+         */
         onWaiting() {
             this.buffering = true;
         },
+        /**
+         * 视频播放时
+         */
         onPlaying() {
             this.buffering = false;
         },
+        /**
+         * 视频可播放时
+         */
         onCanPlay() {
             this.buffering = false;
         },
+        /**
+         * 视频错误时
+         */
         onError() {
             this.buffering = false;
         },
-        // 进度事件：估算网速
+        /**
+         * 视频缓冲进度更新时，估算网速
+         */
         onProgress() {
             const video = this.$refs.video;
             if (!video || !video.buffered.length || !this.duration) return;
@@ -349,7 +483,10 @@ export default {
                 }
             }
         },
-        // 获取视频总大小（通过 HEAD 请求）
+        /**
+         * 获取视频总大小（通过 HEAD 请求）
+         * @param {string} url - 视频地址
+         */
         async fetchVideoSize(url) {
             if (!url) return;
             try {
@@ -365,7 +502,10 @@ export default {
                 this.totalSize = null;
             }
         },
-        // 以下为 CORS 代理相关方法
+        /**
+         * 处理视频错误
+         * @param {Event} e - 事件对象
+         */
         handleVideoError(e) {
             const error = e.target.error;
             if (!this.usingProxy) {
@@ -377,6 +517,9 @@ export default {
             this.$emit('error', error);
             this.buffering = false; // 出错时关闭缓冲提示
         },
+        /**
+         * 使用代理播放视频
+         */
         useProxy() {
             if (!this.src) return;
             this.usingProxy = true;
@@ -425,6 +568,9 @@ export default {
             };
             this.$refs.video.addEventListener('loadedmetadata', onLoad);
         },
+        /**
+         * 重置并重试原始链接
+         */
         resetAndRetry() {
             this.currentSrc = this.src;
             this.usingProxy = false;
@@ -434,7 +580,9 @@ export default {
             this.buffering = true;
             this.fetchVideoSize(this.src);
         },
-        // 时长缓存
+        /**
+         * 加载缓存的视频时长和进度
+         */
         loadCachedDuration() {
             try {
                 const key = `video_${this.videoId}`;
@@ -446,6 +594,9 @@ export default {
                 }
             } catch (e) { }
         },
+        /**
+         * 缓存视频时长和进度
+         */
         cacheVideoDuration() {
             if (!this.duration) return;
             try {
@@ -457,6 +608,11 @@ export default {
                 localStorage.setItem(key, JSON.stringify(cached));
             } catch (e) { }
         },
+        /**
+         * 格式化时间
+         * @param {number} seconds - 秒数
+         * @returns {string} 格式化的时间字符串
+         */
         formatTime(seconds) {
             if (!seconds || isNaN(seconds)) return '00:00';
             const h = Math.floor(seconds / 3600);
@@ -464,7 +620,10 @@ export default {
             const s = Math.floor(seconds % 60);
             return h ? `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}` : `${m}:${s.toString().padStart(2, '0')}`;
         },
-        // 键盘事件处理
+        /**
+         * 处理键盘按下事件
+         * @param {KeyboardEvent} e - 键盘事件
+         */
         handleKeyDown(e) {
             this.showControls(); // 任何键盘操作都刷新控件显示
             const key = e.key;
@@ -492,6 +651,10 @@ export default {
             }
         },
 
+        /**
+         * 处理键盘释放事件
+         * @param {KeyboardEvent} e - 键盘事件
+         */
         handleKeyUp(e) {
             const key = e.key;
             if (key === 'ArrowLeft') {
@@ -504,6 +667,9 @@ export default {
             }
         },
 
+        /**
+         * 处理失去焦点事件
+         */
         handleBlur() {
             // 失去焦点时清除所有长按状态
             this.leftPressed = false;
@@ -511,7 +677,9 @@ export default {
             this.clearAllLongPress();
         },
 
-        // 左箭头处理
+        /**
+         * 处理左箭头按下
+         */
         handleLeftKeyDown() {
             this.clearLeftLongPress(); // 清除之前的定时器
             // 立即后退5秒
@@ -524,6 +692,9 @@ export default {
             }, 300);
         },
 
+        /**
+         * 清除左箭头长按
+         */
         clearLeftLongPress() {
             if (this.longPressTimer) {
                 clearTimeout(this.longPressTimer);
@@ -535,7 +706,9 @@ export default {
             }
         },
 
-        // 右箭头处理
+        /**
+         * 处理右箭头按下
+         */
         handleRightKeyDown() {
             this.clearRightLongPress();
             // 立即快进5秒
@@ -550,6 +723,9 @@ export default {
             }, 300);
         },
 
+        /**
+         * 清除右箭头长按
+         */
         clearRightLongPress() {
             if (this.longPressTimer) {
                 clearTimeout(this.longPressTimer);
@@ -563,12 +739,18 @@ export default {
             }
         },
 
+        /**
+         * 清除所有长按状态
+         */
         clearAllLongPress() {
             this.clearLeftLongPress();
             this.clearRightLongPress();
         },
 
-        // 相对跳转（秒）
+        /**
+         * 相对跳转（秒）
+         * @param {number} seconds - 跳转秒数，正数快进，负数后退
+         */
         seekRelative(seconds) {
             const video = this.$refs.video;
             if (!video) return;
@@ -577,27 +759,41 @@ export default {
             if (newTime > this.duration) newTime = this.duration;
             video.currentTime = newTime;
         },
-        // 控件显示与隐藏
+        /**
+         * 显示控件
+         */
         showControls() {
             this.controlsVisible = true;
             this.resetHideTimer();
         },
+        /**
+         * 重置隐藏控件的定时器
+         */
         resetHideTimer() {
             if (this.hideControlsTimer) clearTimeout(this.hideControlsTimer);
             this.hideControlsTimer = setTimeout(() => {
                 this.controlsVisible = false;
             }, 3000); // 3秒无操作后隐藏
         },
+        /**
+         * 清除隐藏控件的定时器
+         */
         clearHideTimer() {
             if (this.hideControlsTimer) {
                 clearTimeout(this.hideControlsTimer);
                 this.hideControlsTimer = null;
             }
         },
+        /**
+         * 处理用户活动
+         */
         onUserActivity() {
             // 用户活动（鼠标移动、触摸、点击等）时显示控件并重置定时器
             this.showControls();
         },
+        /**
+         * 处理鼠标进入事件
+         */
         onMouseEnter() {
             // 鼠标进入视频区域，清除离开定时器并显示控件
             if (this.leaveTimer) {
@@ -606,6 +802,9 @@ export default {
             }
             this.showControls();
         },
+        /**
+         * 处理鼠标离开事件
+         */
         onMouseLeave() {
             // 鼠标离开视频区域，延迟隐藏（避免闪烁）
             this.clearHideTimer(); // 清除常规隐藏定时器
@@ -613,7 +812,9 @@ export default {
                 this.controlsVisible = false;
             }, 200); // 200ms后隐藏，期间若重新进入则取消
         },
-        // 监听视频尺寸变化
+        /**
+         * 监听视频尺寸变化
+         */
         observeVideoResize() {
             const video = this.$refs.video;
             if (!video) return;
@@ -623,9 +824,48 @@ export default {
             });
 
             this.resizeObserver.observe(video);
+        },
+        /**
+         * 处理触摸开始事件
+         * @param {TouchEvent} e - 触摸事件
+         */
+        onTouchStart(e) {
+            this.onUserActivity();
+            // 清除之前的定时器
+            if (this.touchLongPressTimer) {
+                clearTimeout(this.touchLongPressTimer);
+                this.touchLongPressTimer = null;
+            }
+            // 设置长按定时器，300ms后进入3倍速模式
+            this.touchLongPressTimer = setTimeout(() => {
+                this.isTouchLongPressing = true;
+                this.isRightLongPressing = true; // 复用现有的倍速提示逻辑
+                this.showSpeedTip = true;
+                // 保存当前用户设置的倍速，然后临时设为3倍速
+                this.originalPlaybackRate = this.playbackRate;
+                this.$refs.video.playbackRate = 3;
+            }, 300);
+        },
+        /**
+         * 处理触摸结束事件
+         */
+        onTouchEnd() {
+            // 清除长按定时器
+            if (this.touchLongPressTimer) {
+                clearTimeout(this.touchLongPressTimer);
+                this.touchLongPressTimer = null;
+            }
+            // 如果是长按状态，恢复原倍速
+            if (this.isTouchLongPressing) {
+                this.isTouchLongPressing = false;
+                this.clearRightLongPress(); // 复用现有的清除逻辑
+            }
         }
     },
     watch: {
+        /**
+         * 监听视频源变化
+         */
         src: {
             handler(newSrc) {
                 this.currentSrc = newSrc;// 更新内部地址

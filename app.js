@@ -22,7 +22,6 @@ createApp({
         const categories = ref([]);
         const currentCategory = ref({});
         const searchQuery = ref('');
-        const selectedVideo = ref(null);   // 保留但不再用于模态框，可保留
         const showScrollTop = ref(false);
         const currentPage = ref(1);
         const videosPerPage = ref(12);
@@ -293,7 +292,6 @@ createApp({
             categories,
             currentCategory,
             searchQuery,
-            selectedVideo,
             showScrollTop,
             currentPage,
             videosPerPage,
