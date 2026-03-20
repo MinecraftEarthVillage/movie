@@ -59,7 +59,9 @@ export default {
                     不许盗视频😡🤬
                     不许盗视频😡🤬
                 -->
+                <!-- 视频播放器 -->
                 <video
+                    v-if="!isSwf"
                     ref="video"
                     :src="currentSrc"
                     :poster="poster"
@@ -79,6 +81,46 @@ export default {
                     @pause="onPause"
                     @click="togglePlay"
                 >            </video>
+                
+                <!-- SWF播放器 -->
+                <div v-else class="swf-player">
+                    <div class="swf-content">
+                        <object 
+                            :data="currentSrc" 
+                            type="application/x-shockwave-flash"
+                            width="100%"
+                            height="100%"
+                            ref="swfObject"
+                        >
+                            <param name="movie" :value="currentSrc" />
+                            <param name="quality" value="high" />
+                            <param name="wmode" value="transparent" />
+                            <param name="allowScriptAccess" value="always" />
+                            <param name="allowFullScreen" value="true" />
+                            <embed 
+                                :src="currentSrc" 
+                                type="application/x-shockwave-flash"
+                                width="100%"
+                                height="100%"
+                                quality="high"
+                                wmode="transparent"
+                                allowScriptAccess="always"
+                                allowFullScreen="true"
+                            />
+                            <!-- 当 Flash 不可用时显示的内容 -->
+                            <div class="swf-fallback">
+                                <h3>Flash 播放器不可用</h3>
+                                <p>现代浏览器已经不再默认支持 Flash 播放器。</p>
+                                <p>您可以：</p>
+                                <ul>
+                                    <li>使用支持 Flash 的浏览器（如旧版本的 Chrome 或 Firefox）</li>
+                                    <li>下载 SWF 文件到本地使用 Flash 播放器打开</li>
+                                </ul>
+                                <a :href="currentSrc" download class="download-btn">下载 SWF 文件</a>
+                            </div>
+                        </object>
+                    </div>
+                </div>
 
                 <!-- 缓冲提示层 -->
                 <div v-if="buffering && !error" class="buffering-overlay">
@@ -89,13 +131,13 @@ export default {
                 </div>
 
                 <!-- 错误提示和代理按钮 - 放在视频上方，控件层之下（但实际要浮于所有之上） -->
-                <div v-if="corsError && !usingProxy" class="proxy-tip-overlay">
+                <div v-if="corsError && !usingProxy && !isSwf" class="proxy-tip-overlay">
                     <div class="proxy-tip-content">
                         <p>视频加载遇到跨域问题？</p>
                         <button @click="useProxy">尝试使用代理播放</button>
                     </div>
                 </div>
-                <div v-if="proxyFailed" class="proxy-tip-overlay">
+                <div v-if="proxyFailed && !isSwf" class="proxy-tip-overlay">
                     <div class="proxy-tip-content">
                         <p>所有代理均失败，请稍后重试</p>
                         <button @click="resetAndRetry">重试原始链接</button>
@@ -103,7 +145,7 @@ export default {
                 </div>
 
                 <!-- 自定义控件层 -->
-                <div class="player-controls"  :class="{ 'controls-visible': controlsVisible }"  v-if="!error">
+                <div class="player-controls"  :class="{ 'controls-visible': controlsVisible }"  v-if="!error && !isSwf">
                     <div class="progress-bar" @mousedown="startSeek" ref="progressBar">
                         <div class="progress-played" :style="{ width: playedPercentage + '%' }"></div>
                         <div class="progress-handle" :style="{ left: playedPercentage + '%' }"></div>
@@ -228,6 +270,15 @@ export default {
             leaveTimer: null// 鼠标离开后的延迟隐藏定时器
         };
     },
+    computed: {
+        /**
+         * 判断是否为 SWF 格式
+         * @returns {boolean} 是否为 SWF 格式
+         */
+        isSwf() {
+            return this.currentSrc.toLowerCase().endsWith('.swf');
+        }
+    },
     mounted() {
         // 加载缓存的视频时长和进度
         this.loadCachedDuration();
@@ -281,6 +332,10 @@ export default {
          * 切换播放/暂停状态
          */
         togglePlay() {
+            if (this.isSwf) {
+                this.toggleSwfPlay();
+                return;
+            }
             const video = this.$refs.video;
             if (video.paused) {
                 video.play().catch(e => console.warn('播放错误:', e));
@@ -289,10 +344,22 @@ export default {
             }
         },
         /**
+         * 切换 SWF 播放/暂停状态
+         */
+        toggleSwfPlay() {
+            // SWF 内容通常会自己处理播放控制
+            // 这里主要是为了保持与视频播放器的交互一致性
+            this.playing = !this.playing;
+        },
+        /**
          * 暂停视频
          */
         pauseVideo() {
-            this.$refs.video?.pause();
+            if (!this.isSwf) {
+                this.$refs.video?.pause();
+            } else {
+                this.playing = false;
+            }
         },
         /**
          * 视频开始播放时
@@ -312,6 +379,13 @@ export default {
          * @param {Event} e - 事件对象
          */
         onLoadedMetadata(e) {
+            if (this.isSwf) {
+                // SWF 格式不需要获取视频时长
+                this.duration = 0;
+                this.buffering = false;
+                this.$emit('loaded', { duration: 0 });
+                return;
+            }
             const video = e.target;
             this._tryGetDuration(video);   // 尝试获取并更新 duration
             // 恢复播放进度
@@ -344,6 +418,9 @@ export default {
          * @param {Event} e - 事件对象
          */
         onTimeUpdate(e) {
+            if (this.isSwf) {
+                return;
+            }
             const video = e.target;
             this.currentTime = video.currentTime;
             if (this.duration) {
@@ -358,6 +435,9 @@ export default {
          * 视频播放结束时
          */
         onEnded() {
+            if (this.isSwf) {
+                return;
+            }
             this.playing = false;
             this.$emit('ended');
         },
@@ -366,6 +446,9 @@ export default {
          * @param {MouseEvent} e - 鼠标事件
          */
         startSeek(e) {
+            if (this.isSwf) {
+                return;
+            }
             const rect = this.$refs.progressBar.getBoundingClientRect();
             const percent = (e.clientX - rect.left) / rect.width;
             const newTime = percent * this.duration;
@@ -387,13 +470,18 @@ export default {
          * 改变音量
          */
         changeVolume() {
-            this.$refs.video.volume = this.volume;
-            this.muted = this.volume === 0;
+            if (!this.isSwf) {
+                this.$refs.video.volume = this.volume;
+                this.muted = this.volume === 0;
+            }
         },
         /**
          * 切换静音状态
          */
         toggleMute() {
+            if (this.isSwf) {
+                return;
+            }
             this.muted = !this.muted;
             this.$refs.video.muted = this.muted;
             if (!this.muted && this.volume === 0) {
@@ -405,8 +493,8 @@ export default {
          * 改变播放倍速
          */
         changePlaybackRate() {
-            if (this.isRightLongPressing) {
-                // 长按期间不应用用户选择的倍速，但保留值以便恢复
+            if (this.isSwf || this.isRightLongPressing) {
+                // SWF 格式或长按期间不应用用户选择的倍速
                 return;
             }
             this.$refs.video.playbackRate = this.playbackRate;
@@ -426,30 +514,41 @@ export default {
          * 视频缓冲时
          */
         onWaiting() {
-            this.buffering = true;
+            if (!this.isSwf) {
+                this.buffering = true;
+            }
         },
         /**
          * 视频播放时
          */
         onPlaying() {
-            this.buffering = false;
+            if (!this.isSwf) {
+                this.buffering = false;
+            }
         },
         /**
          * 视频可播放时
          */
         onCanPlay() {
-            this.buffering = false;
+            if (!this.isSwf) {
+                this.buffering = false;
+            }
         },
         /**
          * 视频错误时
          */
         onError() {
-            this.buffering = false;
+            if (!this.isSwf) {
+                this.buffering = false;
+            }
         },
         /**
          * 视频缓冲进度更新时，估算网速
          */
         onProgress() {
+            if (this.isSwf) {
+                return;
+            }
             const video = this.$refs.video;
             if (!video || !video.buffered.length || !this.duration) return;
 
@@ -488,7 +587,7 @@ export default {
          * @param {string} url - 视频地址
          */
         async fetchVideoSize(url) {
-            if (!url) return;
+            if (!url || this.isSwf) return;
             try {
                 const response = await fetch(url, { method: 'HEAD', mode: 'cors' });
                 const contentLength = response.headers.get('content-length');
@@ -507,6 +606,9 @@ export default {
          * @param {Event} e - 事件对象
          */
         handleVideoError(e) {
+            if (this.isSwf) {
+                return;
+            }
             const error = e.target.error;
             if (!this.usingProxy) {
                 this.corsError = true;
@@ -521,7 +623,7 @@ export default {
          * 使用代理播放视频
          */
         useProxy() {
-            if (!this.src) return;
+            if (!this.src || this.isSwf) return;
             this.usingProxy = true;
             this.corsError = false;
             this.proxyFailed = false;
@@ -572,6 +674,7 @@ export default {
          * 重置并重试原始链接
          */
         resetAndRetry() {
+            if (this.isSwf) return;
             this.currentSrc = this.src;
             this.usingProxy = false;
             this.corsError = true;
@@ -584,6 +687,7 @@ export default {
          * 加载缓存的视频时长和进度
          */
         loadCachedDuration() {
+            if (this.isSwf) return;
             try {
                 const key = `video_${this.videoId}`;
                 const cached = localStorage.getItem(key);
@@ -598,7 +702,7 @@ export default {
          * 缓存视频时长和进度
          */
         cacheVideoDuration() {
-            if (!this.duration) return;
+            if (!this.duration || this.isSwf) return;
             try {
                 const key = `video_${this.videoId}`;
                 const cached = JSON.parse(localStorage.getItem(key) || '{}');
@@ -752,6 +856,7 @@ export default {
          * @param {number} seconds - 跳转秒数，正数快进，负数后退
          */
         seekRelative(seconds) {
+            if (this.isSwf) return;
             const video = this.$refs.video;
             if (!video) return;
             let newTime = video.currentTime + seconds;
@@ -878,7 +983,15 @@ export default {
                 this.totalSize = null;
                 this.lastLoadedBytes = 0;
                 this.lastProgressTime = 0;
-                this.$nextTick(() => this.$refs.video?.load()); // 重新加载视频
+                if (!this.isSwf) {
+                    this.$nextTick(() => this.$refs.video?.load()); // 重新加载视频
+                } else {
+                    // SWF 格式不需要调用 load() 方法，但需要显示缓冲提示
+                    setTimeout(() => {
+                        this.buffering = false;
+                        this.$emit('loaded', { duration: 0 });
+                    }, 1000); // 1秒后隐藏缓冲提示
+                }
             },
             immediate: true,
         },
