@@ -31,6 +31,8 @@ createApp({
         // ------- 计算属性 -------
         const filteredVideos = computed(() => {
             let filtered = videos.value;
+            // 过滤掉隐藏的视频
+            filtered = filtered.filter(video => !video.hidden);
             if (currentCategory.value.id !== 'all') {
                 filtered = filtered.filter(video =>
                     video.category === currentCategory.value.id

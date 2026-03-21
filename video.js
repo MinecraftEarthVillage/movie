@@ -40,7 +40,7 @@ createApp({
                 if (!response.ok) throw new Error('Failed to load videos');
                 const videos = await response.json();
                 const found = videos.find(v => String(v.id) === String(videoId));
-                if (found) {
+                if (found && !found.hidden) {
                     video.value = found;
                     setTitle(found.title);
                 } else {
@@ -79,7 +79,7 @@ createApp({
                 if (!response.ok) throw new Error('Failed to load videos');
                 const videos = await response.json();
                 const found = videos.find(v => String(v.id) === String(videoId));
-                if (found) {
+                if (found && !found.hidden) {
                     video.value = found;
                     setTitle(found.title);
                     // 更新URL参数

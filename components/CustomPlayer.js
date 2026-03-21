@@ -126,7 +126,7 @@ export default {
                 <div v-if="buffering && !error" class="buffering-overlay">
                     <div class="buffering-content">
                         <i class="fas fa-spinner fa-spin"></i> 缓冲中
-                        <span v-if="downloadSpeed !== null">{{ downloadSpeed.toFixed(0) }} KB/s</span>
+                        <span v-if="downloadSpeed">{{ downloadSpeed.toFixed(0) }} KB/s</span>
                     </div>
                 </div>
 
