@@ -883,16 +883,6 @@
     "date": "2023-01-08 12:12:38"
   },
   {
-    "id": "null",
-    "title": "棍母",
-    "description": "不存在的视频",
-    "path": "video/",
-    "date": "xxxx-x-x",
-    "tags": [
-      "null"
-    ]
-  },
-  {
     "id": "狮子王之魔幻季节",
     "title": "【FLASH】狮子王之魔幻季节",
     "description": "这是个FLASH动画哟~",
@@ -923,5 +913,31 @@
     ],
     "category": "游戏",
     "date": "2026-03-22 20:50:21"
+  },
+  {
+    "id": "2026王伟",
+    "title": "纪念 “海空卫士” 王伟牺牲 25 周年 - 樱散零乱 翻唱",
+    "description": "纪念 “海空卫士” 王伟牺牲 25 周年，英雄不曾远去，“81192” 永远铭记心底",
+    "path": "https://raw.githubusercontent.com/MinecraftEarthVillage/main/王伟视频-字幕版.m3u8",
+    "tags": [
+      "中国海军",
+      "王伟",
+      "81192",
+      "81194",
+      "中国",
+      "英雄"
+    ],
+    "category": "游戏",
+    "date": "2026-04-01"
+  },
+  {
+    "id": "null",
+    "title": "棍母",
+    "description": "不存在的视频",
+    "path": "video/",
+    "date": "xxxx-x-x",
+    "tags": [
+      "null"
+    ]
   }
 ]
