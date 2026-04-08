@@ -124,7 +124,7 @@ createApp({
             // 跳转到目录（浏览器会自动补全为 /movie/ 或 /）
             window.location.href = dir || '/';
         },
-        // 👇 新增：标签点击处理
+        // 👇 标签点击处理
         searchByTag(tag) {
             // 将要搜索的标签暂存到 sessionStorage
             sessionStorage.setItem('pendingSearch', tag);

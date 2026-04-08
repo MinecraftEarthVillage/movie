@@ -71,10 +71,39 @@
             </div>
 
             <!-- 视频网格 -->
-            <div v-if="!isLoading" class="video-grid">
-                <!-- 视频卡片组件 -->
-                <video-card v-for="video in paginatedVideos" :key="video.id" :video="video"
-                    @video-click="handleVideoClick"></video-card>
+            <div v-if="!isLoading">
+                <!-- 默认分区特殊布局 -->
+                <div v-if="currentCategory.id === config.defaultCategory || (config.defaultCategory === undefined && currentCategory.id === 'recommend')">
+                    <!-- 随机推荐的本站视频 -->
+                    <div class="video-grid">
+                        <video-card v-for="video in randomVideos" :key="video.id" :video="video"
+                            @video-click="handleVideoClick"></video-card>
+                    </div>
+                    
+                    <!-- B站视频标题 -->
+                    <div class="bilibili-section">
+                        <h3>看看真正的哔哩哔哩视频？</h3>
+                    </div>
+                    
+                    <!-- B站推荐视频 -->
+                    <div v-if="!isLoadingB站" class="video-grid">
+                        <video-card v-for="video in b站Videos" :key="video.id" :video="video"
+                            @video-click="handleVideoClick"></video-card>
+                    </div>
+                    <div v-else class="loading-container">
+                        <div class="loading-spinner">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            <p>正在加载B站视频...</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 其他页的普通布局 -->
+                <div v-else class="video-grid">
+                    <!-- 视频卡片组件 -->
+                    <video-card v-for="video in paginatedVideos" :key="video.id" :video="video"
+                        @video-click="handleVideoClick"></video-card>
+                </div>
             </div>
 
             <!-- 加载更多/分页 -->

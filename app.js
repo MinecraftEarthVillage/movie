@@ -3,8 +3,6 @@ import VideoCard from './components/VideoCard.js';
 import SearchBar from './components/SearchBar.js';
 import CategoryNav from './components/CategoryNav.js';
 import UploadButton from './components/UploadButton.js';
-// 移除 VideoModal 导入，改为 VideoPage
-//import VideoPage from './components/VideoPage.js';
 
 const { createApp, ref, computed, onMounted, onUnmounted } = Vue;
 
@@ -14,7 +12,6 @@ createApp({
         SearchBar,
         CategoryNav,
         UploadButton,
-        //VideoPage 
     },
     setup() {
         // ------- 原有数据 -------
@@ -26,14 +23,21 @@ createApp({
         const currentPage = ref(1);
         const videosPerPage = ref(12);
         const isLoading = ref(false);
+        const config = ref({}); // 配置数据
 
+        // ------- 推荐页相关数据 -------
+        const recommendedVideos = ref([]);
+        const b站Videos = ref([]);
+        const isLoadingB站 = ref(false);
 
         // ------- 计算属性 -------
         const filteredVideos = computed(() => {
             let filtered = videos.value;
             // 过滤掉隐藏的视频
             filtered = filtered.filter(video => !video.hidden);
-            if (currentCategory.value.id !== 'all') {
+            // 检查当前分区是否为默认分区
+            const defaultCategoryId = config.value.defaultCategory;
+            if (currentCategory.value.id !== 'all' && currentCategory.value.id !== defaultCategoryId) {
                 filtered = filtered.filter(video =>
                     video.category === currentCategory.value.id
                 );
@@ -54,7 +58,19 @@ createApp({
             return filtered;
         });
 
+        // 随机选择4个本站视频
+        const randomVideos = computed(() => {
+            const nonHiddenVideos = videos.value.filter(video => !video.hidden);
+            const shuffled = [...nonHiddenVideos].sort(() => 0.5 - Math.random());
+            return shuffled.slice(0, 4);
+        });
+
         const totalPages = computed(() => {
+            // 检查当前分区是否为默认分区
+            const defaultCategoryId = config.value.defaultCategory || 'recommend';
+            if (currentCategory.value.id === defaultCategoryId) {
+                return 0; // 默认分区只有一页，不显示页码
+            }
             return Math.ceil(filteredVideos.value.length / videosPerPage.value);
         });
 
@@ -104,7 +120,11 @@ createApp({
             } else {
                 url.searchParams.delete('page');
             }
-            if (currentCategory.value.id !== 'all') {
+            // 检查当前分区是否为默认分区
+            const defaultCategoryId = config.value.defaultCategory || 'recommend';
+            const isDefaultCategory = currentCategory.value.id === defaultCategoryId;
+            if (!isDefaultCategory) {
+                // 非默认分区都需要添加category参数，包括"all"分区
                 url.searchParams.set('category', currentCategory.value.id);
             } else {
                 url.searchParams.delete('category');
@@ -172,9 +192,12 @@ createApp({
             try {
                 const response = await fetch('./data/config.json');
                 if (!response.ok) throw new Error('Failed to load config');
-                const config = await response.json();
-                categories.value = config.categories;
-                currentCategory.value = categories.value.find(cat => cat.id === 'all') || categories.value[0];
+                const configData = await response.json();
+                config.value = configData;
+                categories.value = configData.categories;
+                // 优先使用配置文件中的默认分区
+                const defaultCategoryId = configData.defaultCategory || 'recommend';
+                currentCategory.value = categories.value.find(cat => cat.id === defaultCategoryId) || categories.value[0];
             } catch (error) {
                 console.error('加载分区配置失败:', error);
                 categories.value = getDefaultCategories();
@@ -182,7 +205,44 @@ createApp({
             }
         };
 
+        // 加载B站推荐视频
+        const loadB站Videos = async () => {
+            isLoadingB站.value = true;
+            try {
+                // 由于B站API有访问限制，使用本地示例数据
+                const response = await fetch('https://api.bilibili.com/x/web-interface/wbi/index/top/feed/rcmd',
+                    {credentials: 'include'  // 关键：携带 B 站的 Cookie
+                });
+                if (!response.ok) throw new Error('Failed to load B站 videos');
+                const data = await response.json();
+                if (data.code === 0 && data.data && data.data.item) {
+                    // 转换B站视频数据为本站格式，只取前6个
+                    b站Videos.value = data.data.item.slice(0, 6).map(item => ({
+                        id: item.bvid, // 使用bvid作为id
+                        title: item.title,
+                        description: '', // B站API返回的描述信息有限
+                        path: item.uri, // 使用B站视频链接
+                        tags: [], // B站API返回的标签信息有限
+                        category: 'bilibili', // 标记为B站视频
+                        date: new Date(item.pubdate * 1000).toISOString().split('T')[0], // 转换时间戳为日期
+                        pic: item.pic, // 封面图片
+                        duration: item.duration, // 视频时长
+                        owner: item.owner.name, // 视频作者
+                        view: item.stat.view, // 播放量
+                        like: item.stat.like // 点赞数
+                    }));
+                }
+            } catch (error) {
+                console.error('加载B站视频失败:', error);
+                // 即使失败也不影响页面显示
+                b站Videos.value = [];
+            } finally {
+                isLoadingB站.value = false;
+            }
+        };
+
         const getDefaultCategories = () => [
+            { id: 'recommend', name: '推荐', description: '推荐视频内容', icon: 'fa-star' },
             { id: 'all', name: '全部', description: '所有视频内容', icon: 'fa-compass' }
         ];
 
@@ -250,12 +310,22 @@ createApp({
         onMounted(async () => {
             await Promise.all([loadCategories(), loadVideos()]);
 
+            // 加载B站推荐视频
+            await loadB站Videos();
+
             // 从URL获取分区
             const initialCategory = getCategoryFromUrl();
             if (initialCategory) {
                 const foundCategory = categories.value.find(cat => cat.id === initialCategory);
                 if (foundCategory) {
                     currentCategory.value = foundCategory;
+                }
+            } else {
+                // 如果URL中没有category参数，使用默认分区
+                const defaultCategoryId = config.value.defaultCategory || 'recommend';
+                const defaultCategory = categories.value.find(cat => cat.id === defaultCategoryId);
+                if (defaultCategory) {
+                    currentCategory.value = defaultCategory;
                 }
             }
 
@@ -303,6 +373,12 @@ createApp({
             paginatedVideos,
             pageButtons,
             handleUpload,
+            config,
+
+            // 推荐页相关数据
+            randomVideos,
+            b站Videos,
+            isLoadingB站,
 
             // 原有方法
             changeCategory,

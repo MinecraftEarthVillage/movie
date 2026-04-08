@@ -37,6 +37,9 @@ export default {
                     <span class="date" v-if="video.date">
                         <i class="far fa-calendar"></i> {{ formatDate(video.date) }}
                     </span>
+                    <span class="owner" v-if="video.owner">
+                        <i class="far fa-user"></i> {{ video.owner }}
+                    </span>
                 </div>
             </div>
         </div>
@@ -69,18 +72,32 @@ export default {
         };
     },
     mounted() {
-        // 加载缓存的视频信息
-        this.loadCachedVideoInfo();
-        // 初始化缩略图
-        this.initializeThumbnail();
+        // 对于B站视频，直接使用API返回的封面和时长
+        if (this.video.category === 'bilibili') {
+            if (this.video.pic) {
+                this.thumbnail = this.video.pic;
+            }
+            if (this.video.duration) {
+                this.duration = this.video.duration;
+            }
+        } else {
+            // 对于本地视频，加载缓存的视频信息
+            this.loadCachedVideoInfo();
+            // 初始化缩略图
+            this.initializeThumbnail();
+        }
     },
     methods: {
         /**
          * 跳转到视频详情页
-         * 打开新窗口，使用独立的视频页面 URL
+         * 对于B站视频，直接跳转到B站页面；对于本地视频，打开本地的视频页面
          */
         goToVideoPage() {
-            window.open(`video.html?video=${this.video.id}`, '_blank');
+            if (this.video.category === 'bilibili' && this.video.path) {
+                window.open(this.video.path, '_blank');
+            } else {
+                window.open(`video.html?video=${this.video.id}`, '_blank');
+            }
         },
 
         /**
@@ -273,7 +290,11 @@ export default {
          * 处理图片加载错误
          */
         handleImageError() {
-            if (this.captureAttempts < this.maxCaptureAttempts) {
+            // 对于B站视频，当封面加载失败时使用默认缩略图
+            if (this.video.category === 'bilibili') {
+                this.useDefaultThumbnail();
+                this.thumbnailLoading = false;
+            } else if (this.captureAttempts < this.maxCaptureAttempts) {
                 this.generateThumbnailFromVideo();
             } else {
                 this.useDefaultThumbnail();

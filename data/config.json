@@ -1,7 +1,12 @@
 {
+  "defaultCategory": "推荐",
   "categories": [
     { 
-      "id": "all","←注意":"禁止更改，必须为“all”，这个是默认分区，用于同时显示所有视频",
+      "id": "推荐","←注意":"推荐栏目，作为默认首页",
+       "name": "推荐", "description": "随机推荐", "icon": "fa-star"
+    },
+    { 
+      "id": "all","←注意":"禁止更改，必须为“all”，这个分区用于同时显示所有视频",
        "name": "全部", "description": "所有视频内容", "icon": "fa-compass"
     },
     { "id": "娱乐", "name": "娱乐", "description": "搞笑、综艺、明星相关内容", "icon": "fa-film" },
